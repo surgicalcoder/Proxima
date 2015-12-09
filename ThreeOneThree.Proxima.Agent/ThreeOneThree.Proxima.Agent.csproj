@@ -73,6 +73,12 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ThreeOneThree.Proxima.Core\ThreeOneThree.Proxima.Core.csproj">
+      <Project>{D9A81279-8D2A-4D9F-96A0-7AB66C8B3845}</Project>
+      <Name>ThreeOneThree.Proxima.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Quartz;
+using ThreeOneThree.Proxima.Core;
 using Topshelf;
 using Topshelf.Quartz;
 
@@ -20,10 +21,7 @@ namespace ThreeOneThree.Proxima.Agent
         {
             USNJournalSingleton.Instance.DrivesToMonitor = ConfigurationManager.AppSettings["DrivesToMonitor"].Split(';').Select(e=>new DriveConstruct(e)).ToList();
 
-            var trigger = TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(5).RepeatForever()).Build();
-
-            
-
+            var fiveSecondTrigger = TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(5).RepeatForever()).Build();
 
             Host host = HostFactory.New(x =>
             {
@@ -34,10 +32,7 @@ namespace ThreeOneThree.Proxima.Agent
                 x.SetDisplayName("ProximaAgent");
                 x.SetServiceName("ThreeOneThree.Proxmia.Agent");
 
-                x.ScheduleQuartzJobAsService(q =>
-                {
-                    q.WithJob(() => JobBuilder.Create<USNJournalMonitor>().Build()).AddTrigger(() => trigger);
-                });
+                x.ScheduleQuartzJobAsService(q => { q.WithJob(() => JobBuilder.Create<USNJournalMonitor>().Build()).AddTrigger(() => fiveSecondTrigger); });
 
             });
 
@@ -123,32 +118,179 @@ Win32Api.USN_REASON_CLOSE;
             {
                 return;
             }
-            foreach (var construct in USNJournalSingleton.Instance.DrivesToMonitor)
+
+            using (Repository repo = new Repository())
             {
+                List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>();
 
 
-                Win32Api.USN_JOURNAL_DATA newUsnState;
-                List<Win32Api.UsnEntry> usnEntries;
-
-                NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveInfo);
-
-                var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState);
-
-                if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
+                foreach (var construct in USNJournalSingleton.Instance.DrivesToMonitor)
                 {
 
-                    foreach (var entry in usnEntries)
+                    Win32Api.USN_JOURNAL_DATA newUsnState;
+                    List<Win32Api.UsnEntry> usnEntries;
+
+                    NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveInfo);
+
+                    var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState);
+
+                    if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                     {
-                        
+
+                        foreach (var entry in usnEntries)
+                        {
+                            string rawPath;
+                            string actualPath;
+
+                            var usnRtnCode = journal.GetPathFromFileReference(entry.ParentFileReferenceNumber, out rawPath);
+
+                            if (usnRtnCode == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS && 0 != String.Compare(rawPath, "Unavailable", StringComparison.OrdinalIgnoreCase))
+                            {
+                                actualPath = $"{journal.VolumeName.TrimEnd('\\')}{rawPath}\\{entry.Name}";
+                            }
+                            else
+                            {
+                                actualPath = "#UNKNOWN#";
+                            }
+
+                            var dbEntry = new USNJournalMongoEntry
+                            {
+                                Path = actualPath,
+                                File = entry.IsFile,
+                                Directory = entry.IsFolder,
+                                FRN = entry.FileReferenceNumber,
+                                PFRN = entry.ParentFileReferenceNumber,
+                                RecordLength = entry.RecordLength,
+                                USN = entry.USN,
+                                MachineName = Environment.MachineName.ToLower()
+                            };
+
+
+                            PopulateFlags(dbEntry, entry);
+
+                            entries.Add(dbEntry);
+                        }
+
+                        construct.CurrentJournalData = newUsnState;
+
                     }
-
-                    construct.CurrentJournalData = newUsnState;
-
+                    else
+                    {
+                        throw new UsnJournalException(rtn);
+                    }
                 }
-                else
-                {
-                    throw new UsnJournalException(rtn);
-                }
+
+
+                repo.Add<USNJournalMongoEntry>(entries);
+            }
+        }
+
+        private void PopulateFlags(USNJournalMongoEntry dbEntry, Win32Api.UsnEntry entry)
+        {
+            uint value = entry.Reason & Win32Api.USN_REASON_DATA_OVERWRITE;
+            if (0 != value)
+            {
+                dbEntry.DataOverwrite = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_DATA_EXTEND;
+            if (0 != value)
+            {
+                dbEntry.DataExtend = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_DATA_TRUNCATION;
+            if (0 != value)
+            {
+                dbEntry.DataTruncation = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_NAMED_DATA_OVERWRITE;
+            if (0 != value)
+            {
+                dbEntry.NamedDataOverwrite = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_NAMED_DATA_EXTEND;
+            if (0 != value)
+            {
+                dbEntry.NamedDataExtend = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_NAMED_DATA_TRUNCATION;
+            if (0 != value)
+            {
+                dbEntry.NamedDataTruncation = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_FILE_CREATE;
+            if (0 != value)
+            {
+                dbEntry.FileCreate = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_FILE_DELETE;
+            if (0 != value)
+            {
+                dbEntry.FileDelete = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_EA_CHANGE;
+            if (0 != value)
+            {
+                dbEntry.EaChange = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_SECURITY_CHANGE;
+            if (0 != value)
+            {
+                dbEntry.SecurityChange = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_RENAME_OLD_NAME;
+            if (0 != value)
+            {
+                dbEntry.RenameOldName = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_RENAME_NEW_NAME;
+            if (0 != value)
+            {
+                dbEntry.RenameNewName = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_INDEXABLE_CHANGE;
+            if (0 != value)
+            {
+                dbEntry.IndexableChange = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_BASIC_INFO_CHANGE;
+            if (0 != value)
+            {
+                dbEntry.BasicInfoChange = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_HARD_LINK_CHANGE;
+            if (0 != value)
+            {
+                dbEntry.HardLinkChange = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_COMPRESSION_CHANGE;
+            if (0 != value)
+            {
+                dbEntry.CompressionChange = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_ENCRYPTION_CHANGE;
+            if (0 != value)
+            {
+                dbEntry.EncryptionChange = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_OBJECT_ID_CHANGE;
+            if (0 != value)
+            {
+                dbEntry.ObjectIdChange = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_REPARSE_POINT_CHANGE;
+            if (0 != value)
+            {
+                dbEntry.ReparsePointChange = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_STREAM_CHANGE;
+            if (0 != value)
+            {
+                dbEntry.StreamChange = true;
+            }
+            value = entry.Reason & Win32Api.USN_REASON_CLOSE;
+            if (0 != value)
+            {
+                dbEntry.Close = true;
             }
         }
 
