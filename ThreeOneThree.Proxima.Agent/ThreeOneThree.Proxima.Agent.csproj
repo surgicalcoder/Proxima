@@ -63,8 +63,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DriveConstruct.cs" />
+    <Compile Include="NtfsUsnJournal.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Service.cs" />
+    <Compile Include="UsnJournalException.cs" />
+    <Compile Include="UsnJournalHelper.cs" />
+    <Compile Include="USNJournalMonitor.cs" />
+    <Compile Include="USNJournalSingleton.cs" />
+    <Compile Include="Win32Api.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
