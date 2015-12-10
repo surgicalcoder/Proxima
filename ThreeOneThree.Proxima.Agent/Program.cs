@@ -22,6 +22,7 @@ namespace ThreeOneThree.Proxima.Agent
             USNJournalSingleton.Instance.DrivesToMonitor = ConfigurationManager.AppSettings["DrivesToMonitor"].Split(';').Select(e=>new DriveConstruct(e)).ToList();
 
             var fiveSecondTrigger = TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(5).RepeatForever()).Build();
+            //var fiveSecondTrigger = TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(5).RepeatForever()).Build();
 
             Host host = HostFactory.New(x =>
             {
@@ -64,12 +65,12 @@ namespace ThreeOneThree.Proxima.Agent
         
         public bool Start(HostControl hostControl)
         {
-            throw new NotImplementedException();
+            return true;
         }
 
         public bool Stop(HostControl hostControl)
         {
-            throw new NotImplementedException();
+            return true;
         }
         
     }
@@ -88,6 +89,8 @@ namespace ThreeOneThree.Proxima.Agent
         public List<DriveConstruct> DrivesToMonitor { get; set; }
     }
 
+    [PersistJobDataAfterExecution]
+    [DisallowConcurrentExecution]
     public class USNJournalMonitor : IJob
     {
 
@@ -114,7 +117,7 @@ Win32Api.USN_REASON_CLOSE;
 
         public void Execute(IJobExecutionContext context)
         {
-            if (USNJournalSingleton.Instance.DrivesToMonitor.Count == 0)
+            if (USNJournalSingleton.Instance.DrivesToMonitor == null || USNJournalSingleton.Instance.DrivesToMonitor.Count == 0)
             {
                 return;
             }
@@ -167,7 +170,7 @@ Win32Api.USN_REASON_CLOSE;
 
 
                             PopulateFlags(dbEntry, entry);
-
+                            Console.WriteLine("Added entry");
                             entries.Add(dbEntry);
                         }
 

@@ -42,7 +42,7 @@ namespace ThreeOneThree.Proxima.Core
 
         public Repository()
         {
-            mongoContext = "MongoPluginContext";
+            mongoContext = "ProxmiaContext";
             InitContext();
         }
 
