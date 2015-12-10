@@ -993,7 +993,7 @@ namespace ThreeOneThree.Proxima.Agent
         private UsnJournalReturnCode
             GetVolumeSerialNumber(DriveInfo driveInfo, out uint volumeSerialNumber)
         {
-            Console.WriteLine("GetVolumeSerialNumber() function entered for drive '{0}'", driveInfo.Name);
+            //Console.WriteLine("GetVolumeSerialNumber() function entered for drive '{0}'", driveInfo.Name);
 
             volumeSerialNumber = 0;
             UsnJournalReturnCode usnRtnCode = UsnJournalReturnCode.USN_JOURNAL_SUCCESS;

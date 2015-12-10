@@ -87,7 +87,6 @@ namespace ThreeOneThree.Proxima.Agent
 
 
                             PopulateFlags(dbEntry, entry);
-                            //Console.WriteLine("Added entry");
                             entries.Add(dbEntry);
                         }
 
