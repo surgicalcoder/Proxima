@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using Amib.Threading;
+using ThreeOneThree.Proxima.Core;
 
 namespace ThreeOneThree.Proxima.Agent
 {
@@ -7,11 +9,15 @@ namespace ThreeOneThree.Proxima.Agent
         static readonly USNJournalSingleton _instance = new USNJournalSingleton();
         public static USNJournalSingleton Instance => _instance;
 
-        USNJournalSingleton() { }
+        USNJournalSingleton()
+        {
+            ThreadPool = new SmartThreadPool();
+            Repository = new Repository();
+        }
 
-        //public Win32Api.USN_JOURNAL_DATA CurrentStatus { get; set; }
+        public SmartThreadPool ThreadPool { get; set; }
 
-        
+        public Repository Repository { get; set; }
 
         public List<DriveConstruct> DrivesToMonitor { get; set; }
     }

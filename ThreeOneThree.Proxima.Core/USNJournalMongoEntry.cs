@@ -6,6 +6,7 @@ namespace ThreeOneThree.Proxima.Core
     {
         public string MachineName { get; set; }
         public string Path { get; set; }
+        public string UniversalPath { get; set; }
         public bool? File { get; set; }
         public bool? Directory { get; set; }
 
@@ -53,8 +54,10 @@ namespace ThreeOneThree.Proxima.Core
 
         public USNJournalMongoEntry Entry { get; set; }
 
-        public DateTime StartDate { get; set; }
-        public DateTime? FinishDate { get; set; }
+        public DateTime Enqueued { get; set; }
+
+        public DateTime? CopyStartDate { get; set; }
+        public DateTime? CopyFinishDate { get; set; }
 
         public bool Successfull { get; set; }
 

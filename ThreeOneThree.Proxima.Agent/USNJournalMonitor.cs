@@ -1,68 +1,39 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
 
 namespace ThreeOneThree.Proxima.Agent
 {
-
-
-    [PersistJobDataAfterExecution]
-    [DisallowConcurrentExecution]
-    public class USNJournalSync : IJob
-    {
-        public void Execute(IJobExecutionContext context)
-        {
-            if (USNJournalSingleton.Instance.DrivesToMonitor == null || USNJournalSingleton.Instance.DrivesToMonitor.Count == 0)
-            {
-                return;
-            }
-
-
-            using (Repository repo = new Repository())
-            {
-                var syncFroms = repo.Many<USNJournalSyncFrom>(e => e.DestinationMachine == Environment.MachineName.ToLowerInvariant());
-
-                foreach (var syncFrom in syncFroms)
-                {
-
-                    var changedFiles = repo.Many<USNJournalMongoEntry>(e => e.CausedBySync == false && e.USN >= syncFrom.CurrentUSNLocation);
-
-
-
-
-
-                }
-            }
-        }
-    }
-
     [PersistJobDataAfterExecution]
     [DisallowConcurrentExecution]
     public class USNJournalMonitor : IJob
     {
 
-        uint reasonMask = Win32Api.USN_REASON_DATA_OVERWRITE |
-                          Win32Api.USN_REASON_DATA_EXTEND |
-                          Win32Api.USN_REASON_NAMED_DATA_OVERWRITE |
-                          Win32Api.USN_REASON_NAMED_DATA_TRUNCATION |
-                          Win32Api.USN_REASON_FILE_CREATE |
-                          Win32Api.USN_REASON_FILE_DELETE |
-                          Win32Api.USN_REASON_EA_CHANGE |
-                          Win32Api.USN_REASON_SECURITY_CHANGE |
-                          Win32Api.USN_REASON_RENAME_OLD_NAME |
-                          Win32Api.USN_REASON_RENAME_NEW_NAME |
-                          Win32Api.USN_REASON_INDEXABLE_CHANGE |
-                          Win32Api.USN_REASON_BASIC_INFO_CHANGE |
-//Win32Api.USN_REASON_HARD_LINK_CHANGE |
-//Win32Api.USN_REASON_COMPRESSION_CHANGE |
-                          Win32Api.USN_REASON_ENCRYPTION_CHANGE |
-                          Win32Api.USN_REASON_OBJECT_ID_CHANGE |
-//Win32Api.USN_REASON_REPARSE_POINT_CHANGE |
-                          Win32Api.USN_REASON_STREAM_CHANGE |
-                          Win32Api.USN_REASON_CLOSE;
+        uint reasonMask = 
+            Win32Api.USN_REASON_DATA_OVERWRITE |
+            Win32Api.USN_REASON_DATA_EXTEND |
+            //Win32Api.USN_REASON_NAMED_DATA_OVERWRITE |
+            //Win32Api.USN_REASON_NAMED_DATA_TRUNCATION |
+            Win32Api.USN_REASON_FILE_CREATE |
+            Win32Api.USN_REASON_FILE_DELETE |
+            //Win32Api.USN_REASON_EA_CHANGE |
+            //Win32Api.USN_REASON_SECURITY_CHANGE |
+            Win32Api.USN_REASON_RENAME_OLD_NAME |
+            Win32Api.USN_REASON_RENAME_NEW_NAME |
+            //Win32Api.USN_REASON_INDEXABLE_CHANGE |
+            Win32Api.USN_REASON_BASIC_INFO_CHANGE |
+            //Win32Api.USN_REASON_HARD_LINK_CHANGE |
+            //Win32Api.USN_REASON_COMPRESSION_CHANGE |
+            //Win32Api.USN_REASON_ENCRYPTION_CHANGE |
+            //Win32Api.USN_REASON_OBJECT_ID_CHANGE |
+            //Win32Api.USN_REASON_REPARSE_POINT_CHANGE |
+            //Win32Api.USN_REASON_STREAM_CHANGE |
+            Win32Api.USN_REASON_CLOSE;
 
 
         public void Execute(IJobExecutionContext context)
@@ -105,21 +76,21 @@ namespace ThreeOneThree.Proxima.Agent
                                 actualPath = "#UNKNOWN#";
                             }
 
-                            var dbEntry = new USNJournalMongoEntry
-                            {
-                                Path = actualPath,
-                                File = entry.IsFile,
-                                Directory = entry.IsFolder,
-                                FRN = entry.FileReferenceNumber,
-                                PFRN = entry.ParentFileReferenceNumber,
-                                RecordLength = entry.RecordLength,
-                                USN = entry.USN,
-                                MachineName = Environment.MachineName.ToLower(),
-                                TimeStamp =  entry.TimeStamp
-                            };
+                            var dbEntry = new USNJournalMongoEntry();
+                            dbEntry.Path = actualPath;
+                            dbEntry.File = entry.IsFile;
+                            dbEntry.Directory = entry.IsFolder;
+                            dbEntry.FRN = entry.FileReferenceNumber;
+                            dbEntry.PFRN = entry.ParentFileReferenceNumber;
+                            dbEntry.RecordLength = entry.RecordLength;
+                            dbEntry.USN = entry.USN;
+                            dbEntry.MachineName = Environment.MachineName.ToLower();
+                            dbEntry.TimeStamp = entry.TimeStamp;
+                            dbEntry.UniversalPath = GetRemotePath(actualPath);
 
 
                             PopulateFlags(dbEntry, entry);
+                            Console.WriteLine("WIBBLE");
                             entries.Add(dbEntry);
                         }
 
@@ -135,6 +106,11 @@ namespace ThreeOneThree.Proxima.Agent
 
                 repo.Add<USNJournalMongoEntry>(entries);
             }
+        }
+
+        private string GetRemotePath(string actualPath)
+        {
+            return "\\" + Environment.MachineName + "\\" + actualPath.Replace(":", "$");
         }
 
         private void PopulateFlags(USNJournalMongoEntry dbEntry, Win32Api.UsnEntry entry)
@@ -245,21 +221,7 @@ namespace ThreeOneThree.Proxima.Agent
                 dbEntry.Close = true;
             }
         }
-
-        private string FormatUsnJournalState(Win32Api.USN_JOURNAL_DATA _usnCurrentJournalState)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine(string.Format("Journal ID: {0}", _usnCurrentJournalState.UsnJournalID.ToString("X")));
-            sb.AppendLine(string.Format(" First USN: {0}", _usnCurrentJournalState.FirstUsn.ToString("X")));
-            sb.AppendLine(string.Format("  Next USN: {0}", _usnCurrentJournalState.NextUsn.ToString("X")));
-            sb.AppendLine();
-            sb.AppendLine(string.Format("Lowest Valid USN: {0}", _usnCurrentJournalState.LowestValidUsn.ToString("X")));
-            sb.AppendLine(string.Format("         Max USN: {0}", _usnCurrentJournalState.MaxUsn.ToString("X")));
-            sb.AppendLine(string.Format("        Max Size: {0}", _usnCurrentJournalState.MaximumSize.ToString("X")));
-            sb.AppendLine(string.Format("Allocation Delta: {0}", _usnCurrentJournalState.AllocationDelta.ToString("X")));
-            return sb.ToString();
-        }
-
+    
 
     }
 }
