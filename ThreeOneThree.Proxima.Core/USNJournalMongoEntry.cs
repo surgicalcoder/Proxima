@@ -1,3 +1,5 @@
+using System;
+
 namespace ThreeOneThree.Proxima.Core
 {
     public class USNJournalMongoEntry : MongoEntity
@@ -14,6 +16,10 @@ namespace ThreeOneThree.Proxima.Core
         public long RecordLength { get; set; }
 
         public long USN { get; set; }
+
+        public bool? CausedBySync { get; set; }
+
+        public DateTime TimeStamp { get; set; }
 
         public bool? DataOverwrite { get; set; }
         public bool? DataExtend { get; set; }
@@ -36,7 +42,30 @@ namespace ThreeOneThree.Proxima.Core
         public bool? ReparsePointChange { get; set; }
         public bool? StreamChange { get; set; }
         public bool? Close { get; set; }
+    }
+
+    public class USNJournalSyncLog : MongoEntity
+    {
+        public string SourceMachine { get; set; }
+
+        public string DestinationMachine { get; set; }
 
 
+        public USNJournalMongoEntry Entry { get; set; }
+
+        public DateTime StartDate { get; set; }
+        public DateTime? FinishDate { get; set; }
+
+        public bool Successfull { get; set; }
+
+    }
+
+    public class USNJournalSyncFrom : MongoEntity
+    {
+        public string SourceMachine { get; set; }
+
+        public string DestinationMachine { get; set; }
+
+        public long CurrentUSNLocation { get; set; }
     }
 }

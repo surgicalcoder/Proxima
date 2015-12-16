@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 
 namespace ThreeOneThree.Proxima.Agent
 {
@@ -499,12 +500,17 @@ namespace ThreeOneThree.Proxima.Agent
             public const int FA_OFFSET = 52;
             private const int FNL_OFFSET = 56;
             private const int FN_OFFSET = 58;
+            private const int TIME_OFFSET = 32;
 
             private UInt32 _recordLength;
             public UInt32 RecordLength
             {
                 get { return _recordLength; }
             }
+
+            private DateTime _timeStamp;
+
+            public DateTime TimeStamp => _timeStamp;
 
             private Int64 _usn;
             public Int64 USN
@@ -595,6 +601,11 @@ namespace ThreeOneThree.Proxima.Agent
                 _usn = (Int64)Marshal.ReadInt64(ptrToUsnRecord, USN_OFFSET);
                 _reason = (UInt32)Marshal.ReadInt32(ptrToUsnRecord, REASON_OFFSET);
                 _fileAttributes = (UInt32)Marshal.ReadInt32(ptrToUsnRecord, FA_OFFSET);
+                //FILETIME blarg;
+
+                _timeStamp = DateTime.FromFileTimeUtc((Int64) Marshal.ReadInt64(ptrToUsnRecord, TIME_OFFSET));
+
+                // TIME_OFFSET
                 short fileNameLength = Marshal.ReadInt16(ptrToUsnRecord, FNL_OFFSET);
                 short fileNameOffset = Marshal.ReadInt16(ptrToUsnRecord, FN_OFFSET);
                 _name = Marshal.PtrToStringUni(new IntPtr(ptrToUsnRecord.ToInt32() + fileNameOffset), fileNameLength / sizeof(char));

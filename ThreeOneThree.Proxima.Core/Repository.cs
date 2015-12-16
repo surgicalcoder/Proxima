@@ -95,6 +95,12 @@ namespace ThreeOneThree.Proxima.Core
             {
                 return;
             }
+            
+            if (!mongoDatabase.GetCollection<USNJournalMongoEntry>(GetCollectionNameForType<USNJournalMongoEntry>("")).Indexes.List().Any())
+            {
+                mongoDatabase.GetCollection<USNJournalMongoEntry>(GetCollectionNameForType<USNJournalMongoEntry>("")).Indexes.CreateOne(Builders<USNJournalMongoEntry>.IndexKeys.Ascending(e => e.MachineName).Ascending(e => e.USN));
+            }
+
             InitRun = true;
             InitLastChecked = DateTime.Now;
         }

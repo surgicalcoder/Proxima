@@ -1,11 +1,44 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
 
 namespace ThreeOneThree.Proxima.Agent
 {
+
+
+    [PersistJobDataAfterExecution]
+    [DisallowConcurrentExecution]
+    public class USNJournalSync : IJob
+    {
+        public void Execute(IJobExecutionContext context)
+        {
+            if (USNJournalSingleton.Instance.DrivesToMonitor == null || USNJournalSingleton.Instance.DrivesToMonitor.Count == 0)
+            {
+                return;
+            }
+
+
+            using (Repository repo = new Repository())
+            {
+                var syncFroms = repo.Many<USNJournalSyncFrom>(e => e.DestinationMachine == Environment.MachineName.ToLowerInvariant());
+
+                foreach (var syncFrom in syncFroms)
+                {
+
+                    var changedFiles = repo.Many<USNJournalMongoEntry>(e => e.CausedBySync == false && e.USN >= syncFrom.CurrentUSNLocation);
+
+
+
+
+
+                }
+            }
+        }
+    }
+
     [PersistJobDataAfterExecution]
     [DisallowConcurrentExecution]
     public class USNJournalMonitor : IJob
@@ -42,7 +75,6 @@ namespace ThreeOneThree.Proxima.Agent
             using (Repository repo = new Repository())
             {
                 List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>();
-
 
                 foreach (var construct in USNJournalSingleton.Instance.DrivesToMonitor)
                 {
@@ -82,7 +114,8 @@ namespace ThreeOneThree.Proxima.Agent
                                 PFRN = entry.ParentFileReferenceNumber,
                                 RecordLength = entry.RecordLength,
                                 USN = entry.USN,
-                                MachineName = Environment.MachineName.ToLower()
+                                MachineName = Environment.MachineName.ToLower(),
+                                TimeStamp =  entry.TimeStamp
                             };
 
 
