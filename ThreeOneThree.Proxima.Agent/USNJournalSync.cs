@@ -11,7 +11,6 @@ namespace ThreeOneThree.Proxima.Agent
     {
         public void Execute(IJobExecutionContext context)
         {
-            Console.WriteLine("Meeples!");
             if (USNJournalSingleton.Instance.DrivesToMonitor == null || USNJournalSingleton.Instance.DrivesToMonitor.Count == 0)
             {
                 return;

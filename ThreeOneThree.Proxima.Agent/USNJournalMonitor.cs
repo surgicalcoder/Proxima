@@ -90,7 +90,6 @@ namespace ThreeOneThree.Proxima.Agent
 
 
                             PopulateFlags(dbEntry, entry);
-                            Console.WriteLine("WIBBLE");
                             entries.Add(dbEntry);
                         }
 
