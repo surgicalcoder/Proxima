@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Management;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace ThreeOneThree.Proxima.Agent
@@ -62,7 +64,13 @@ namespace ThreeOneThree.Proxima.Agent
 
         #region private member variables
 
-        private DriveInfo _driveInfo = null;
+        public string MountPoint => _mountPoint;
+
+        public string VolumePath => _volumePath;
+
+        private string _mountPoint = null;
+        private string _volumePath = null;
+        //private DriveInfo _driveInfo = null;
         private uint _volumeSerialNumber;
         private IntPtr _usnJournalRootHandle;
 
@@ -78,40 +86,40 @@ namespace ThreeOneThree.Proxima.Agent
             get { return _elapsedTime; }
         }
 
-        public string VolumeName
-        {
-            get { return _driveInfo.Name; }
-        }
+        //public string VolumeName
+        //{
+        //    get { return _driveInfo.Name; }
+        //}
 
-        public long AvailableFreeSpace
-        {
-            get { return _driveInfo.AvailableFreeSpace; }
-        }
+        //public long AvailableFreeSpace
+        //{
+        //    get { return _driveInfo.AvailableFreeSpace; }
+        //}
 
-        public long TotalFreeSpace
-        {
-            get { return _driveInfo.TotalFreeSpace; }
-        }
+        //public long TotalFreeSpace
+        //{
+        //    get { return _driveInfo.TotalFreeSpace; }
+        //}
 
-        public string Format
-        {
-            get { return _driveInfo.DriveFormat; }
-        }
+        //public string Format
+        //{
+        //    get { return _driveInfo.DriveFormat; }
+        //}
 
-        public DirectoryInfo RootDirectory
-        {
-            get { return _driveInfo.RootDirectory; }
-        }
+        //public DirectoryInfo RootDirectory
+        //{
+        //    get { return _driveInfo.RootDirectory; }
+        //}
 
-        public long TotalSize
-        {
-            get { return _driveInfo.TotalSize; }
-        }
+        //public long TotalSize
+        //{
+        //    get { return _driveInfo.TotalSize; }
+        //}
 
-        public string VolumeLabel
-        {
-            get { return _driveInfo.VolumeLabel; }
-        }
+        //public string VolumeLabel
+        //{
+        //    get { return _driveInfo.VolumeLabel; }
+        //}
 
         public uint VolumeSerialNumber
         {
@@ -135,14 +143,33 @@ namespace ThreeOneThree.Proxima.Agent
         /// valid.  If these two conditions aren't met, then the public function will return a UsnJournalReturnCode
         /// error.
         /// </remarks>
-        public NtfsUsnJournal(DriveInfo driveInfo)
+        public NtfsUsnJournal(string MountPoint)
         {
             DateTime start = DateTime.Now;
-            _driveInfo = driveInfo;
 
-            if (0 == string.Compare(_driveInfo.DriveFormat, "ntfs", true))
+            if (!MountPoint.EndsWith("\\"))
+            {
+                MountPoint = MountPoint + "\\";
+            }
+
+            //_driveInfo = driveInfo;
+            _mountPoint = MountPoint;
+            
+            if (0 == string.Compare(Win32Api.GetVolumeType(MountPoint), "ntfs", true))
             {
                 bNtfsVolume = true;
+
+
+
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher("root\\cimv2", @"select * from Win32_Volume");
+
+                var volume = (from ManagementObject ob in searcher.Get()
+                              where ob["Caption"] != null && ob["Caption"].ToString() == MountPoint
+                              select ob["DeviceID"].ToString()).FirstOrDefault();
+
+
+                _volumePath = volume;
+
 
                 IntPtr rootHandle = IntPtr.Zero;
                 UsnJournalReturnCode usnRtnCode = GetRootHandle(out rootHandle);
@@ -150,7 +177,7 @@ namespace ThreeOneThree.Proxima.Agent
                 if (usnRtnCode == UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                 {
                     _usnJournalRootHandle = rootHandle;
-                    usnRtnCode = GetVolumeSerialNumber(_driveInfo, out _volumeSerialNumber);
+                    usnRtnCode = GetVolumeSerialNumber(MountPoint, out _volumeSerialNumber);
                     if (usnRtnCode != UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                     {
                         _elapsedTime = DateTime.Now - start;
@@ -166,7 +193,7 @@ namespace ThreeOneThree.Proxima.Agent
             else
             {
                 _elapsedTime = DateTime.Now - start;
-                throw new Exception(string.Format("{0} is not an 'NTFS' volume.", _driveInfo.Name));
+                throw new Exception(string.Format("{0} is not an 'NTFS' volume.", MountPoint));
             }
             _elapsedTime = DateTime.Now - start;
         }
@@ -991,13 +1018,21 @@ namespace ThreeOneThree.Proxima.Agent
         /// <param name="volumeSerialNumber">out parameter to hold the volume serial number.</param>
         /// <returns></returns>
         private UsnJournalReturnCode
-            GetVolumeSerialNumber(DriveInfo driveInfo, out uint volumeSerialNumber)
+            GetVolumeSerialNumber(string MountPoint, out uint volumeSerialNumber)
         {
             //Console.WriteLine("GetVolumeSerialNumber() function entered for drive '{0}'", driveInfo.Name);
 
+            if (!MountPoint.EndsWith("\\"))
+            {
+                MountPoint = MountPoint + "\\";
+            }
+
             volumeSerialNumber = 0;
             UsnJournalReturnCode usnRtnCode = UsnJournalReturnCode.USN_JOURNAL_SUCCESS;
-            string pathRoot = string.Concat("\\\\.\\", driveInfo.Name);
+
+            
+
+            string pathRoot = _volumePath;
 
             IntPtr hRoot = Win32Api.CreateFile(pathRoot,
                 0,
@@ -1042,7 +1077,10 @@ namespace ThreeOneThree.Proxima.Agent
             //
             UsnJournalReturnCode usnRtnCode = UsnJournalReturnCode.USN_JOURNAL_SUCCESS;
             rootHandle = IntPtr.Zero;
-            string vol = string.Concat("\\\\.\\", _driveInfo.Name.TrimEnd('\\'));
+            string vol = string.Concat("\\\\.\\", _mountPoint.TrimEnd('\\'));
+            //string vol = _volumePath; //string.Concat("\\\\.\\", _driveInfo.Name.TrimEnd('\\'));
+
+
 
             rootHandle = Win32Api.CreateFile(vol,
                 Win32Api.GENERIC_READ | Win32Api.GENERIC_WRITE,

@@ -6,7 +6,7 @@ namespace ThreeOneThree.Proxima.Agent
     {
         public static Win32Api.USN_JOURNAL_DATA GetCurrentUSNJournalData(string DriveLetter)
         {
-            NtfsUsnJournal journal = new NtfsUsnJournal(new DriveInfo(DriveLetter));
+            NtfsUsnJournal journal = new NtfsUsnJournal(DriveLetter);
 
             Win32Api.USN_JOURNAL_DATA journalState = new Win32Api.USN_JOURNAL_DATA();
 

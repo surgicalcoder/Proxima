@@ -95,13 +95,18 @@ namespace ThreeOneThree.Proxima.Agent
 
         private void TransferItem(USNJournalSyncLog syncLog)
         {
+            return;
             if (syncLog.Action.DeleteFile)
             {
                 logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.Path}");
 
                 if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                 {
+                    syncLog.ActionStartDate = DateTime.Now;
+                    USNJournalSingleton.Instance.Repository.Update(syncLog);
                     File.Delete(syncLog.Action.Path);
+                    syncLog.ActionFinishDate = DateTime.Now;
+                    USNJournalSingleton.Instance.Repository.Update(syncLog);
                 }
                 
             }
@@ -111,7 +116,12 @@ namespace ThreeOneThree.Proxima.Agent
 
                 if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                 {
+                    syncLog.ActionStartDate = DateTime.Now;
+                    USNJournalSingleton.Instance.Repository.Update(syncLog);
                     File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
+                    syncLog.ActionFinishDate = DateTime.Now;
+                    USNJournalSingleton.Instance.Repository.Update(syncLog);
+                    
                 }
             }
             else
@@ -120,7 +130,11 @@ namespace ThreeOneThree.Proxima.Agent
 
                 if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                 {
+                    syncLog.ActionStartDate = DateTime.Now;
+                    USNJournalSingleton.Instance.Repository.Update(syncLog);
                     File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path);
+                    syncLog.ActionFinishDate = DateTime.Now;
+                    USNJournalSingleton.Instance.Repository.Update(syncLog);
                 }
             }
         }

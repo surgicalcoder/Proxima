@@ -54,7 +54,7 @@ namespace ThreeOneThree.Proxima.Agent
                     Win32Api.USN_JOURNAL_DATA newUsnState;
                     List<Win32Api.UsnEntry> usnEntries;
 
-                    NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveInfo);
+                    NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
 
                     var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState);
 
@@ -70,7 +70,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                             if (usnRtnCode == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS && 0 != String.Compare(rawPath, "Unavailable", StringComparison.OrdinalIgnoreCase))
                             {
-                                actualPath = $"{journal.VolumeName.TrimEnd('\\')}{rawPath}\\{entry.Name}";
+                                actualPath = $"{journal.MountPoint.TrimEnd('\\')}{rawPath}\\{entry.Name}";
                             }
                             else
                             {
