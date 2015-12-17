@@ -50,8 +50,6 @@ namespace ThreeOneThree.Proxima.Agent
             try
             {
                 Args.InvokeAction<AdminCommands>(args);
-                
-                //Console.WriteLine("You entered string '{0}' and int '{1}'", parsed.StringArg, parsed.IntArg);
             }
             catch (ArgException ex)
             {

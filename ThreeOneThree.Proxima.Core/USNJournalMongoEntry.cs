@@ -52,7 +52,7 @@ namespace ThreeOneThree.Proxima.Core
         public string DestinationMachine { get; set; }
 
 
-        public USNJournalMongoEntry Entry { get; set; }
+        public MongoRef<USNJournalMongoEntry> Entry { get; set; }
 
         public DateTime Enqueued { get; set; }
 
@@ -61,8 +61,21 @@ namespace ThreeOneThree.Proxima.Core
 
         public bool Successfull { get; set; }
 
+        public FileAction Action { get; set; }
+
     }
 
+    public class FileAction
+    {
+        public bool DeleteFile { get; set; }
+
+        public string RenameTo { get; set; }
+
+        public string RenameFrom { get; set; }
+        public string Path { get; set; }
+
+        public long USN { get; set; }
+    }
     public class USNJournalSyncFrom : MongoEntity
     {
         public string SourceMachine { get; set; }
