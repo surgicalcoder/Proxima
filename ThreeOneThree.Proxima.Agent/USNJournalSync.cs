@@ -36,6 +36,11 @@ namespace ThreeOneThree.Proxima.Agent
                     var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync.HasValue && e.USN >= syncFrom.CurrentUSNLocation && e.MachineName == syncFrom.SourceMachine.ToLowerInvariant()).ToList();
                     var changedFiles = PerformRollup(rawEntries).ToList();
 
+                    if (rawEntries.Count == 0)
+                    {
+                        continue;
+                    }
+
                     long lastUsn = rawEntries.LastOrDefault().USN;
 
                     foreach (var fileAction in changedFiles)
