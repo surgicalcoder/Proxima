@@ -2,6 +2,7 @@
 using System.Linq;
 using PowerArgs;
 using ThreeOneThree.Proxima.Core;
+using ThreeOneThree.Proxima.Core.Entities;
 
 namespace ThreeOneThree.Proxima.Agent
 {

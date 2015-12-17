@@ -1,4 +1,4 @@
-﻿namespace ThreeOneThree.Proxima.Core
+﻿namespace ThreeOneThree.Proxima.Core.Entities
 {
     public abstract class MongoEntity
     {

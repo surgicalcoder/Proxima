@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ThreeOneThree.Proxima.Core;
+using ThreeOneThree.Proxima.Core.Entities;
 
 namespace ThreeOneThree.Proxima.Agent
 {

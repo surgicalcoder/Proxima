@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
+using ThreeOneThree.Proxima.Core.Entities;
 
 namespace ThreeOneThree.Proxima.Agent
 {
@@ -80,7 +81,18 @@ namespace ThreeOneThree.Proxima.Agent
 
         private void TransferItem(USNJournalSyncLog usnJournalMongoEntry)
         {
-            
+            if (usnJournalMongoEntry.Action.DeleteFile)
+            {
+                // Delete File
+            }
+            else if (string.IsNullOrWhiteSpace(usnJournalMongoEntry.Action.RenameFrom))
+            {
+                // Move File
+            }
+            else
+            {
+                // Copy File from other node.
+            }
         }
     }
 }

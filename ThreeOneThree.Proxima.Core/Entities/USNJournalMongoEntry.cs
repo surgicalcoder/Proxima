@@ -1,6 +1,6 @@
 using System;
 
-namespace ThreeOneThree.Proxima.Core
+namespace ThreeOneThree.Proxima.Core.Entities
 {
     public class USNJournalMongoEntry : MongoEntity
     {
@@ -43,45 +43,5 @@ namespace ThreeOneThree.Proxima.Core
         public bool? ReparsePointChange { get; set; }
         public bool? StreamChange { get; set; }
         public bool? Close { get; set; }
-    }
-
-    public class USNJournalSyncLog : MongoEntity
-    {
-        public string SourceMachine { get; set; }
-
-        public string DestinationMachine { get; set; }
-
-
-        public MongoRef<USNJournalMongoEntry> Entry { get; set; }
-
-        public DateTime Enqueued { get; set; }
-
-        public DateTime? CopyStartDate { get; set; }
-        public DateTime? CopyFinishDate { get; set; }
-
-        public bool Successfull { get; set; }
-
-        public FileAction Action { get; set; }
-
-    }
-
-    public class FileAction
-    {
-        public bool DeleteFile { get; set; }
-
-        public string RenameTo { get; set; }
-
-        public string RenameFrom { get; set; }
-        public string Path { get; set; }
-
-        public long USN { get; set; }
-    }
-    public class USNJournalSyncFrom : MongoEntity
-    {
-        public string SourceMachine { get; set; }
-
-        public string DestinationMachine { get; set; }
-
-        public long CurrentUSNLocation { get; set; }
     }
 }

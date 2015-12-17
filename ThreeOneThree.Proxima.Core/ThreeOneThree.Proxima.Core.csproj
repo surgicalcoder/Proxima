@@ -84,13 +84,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Entities\FileAction.cs" />
+    <Compile Include="Entities\USNJournalSyncFrom.cs" />
+    <Compile Include="Entities\USNJournalSyncLog.cs" />
     <Compile Include="MongoRef.cs" />
     <Compile Include="Helper.cs" />
-    <Compile Include="MongoEntity.cs" />
+    <Compile Include="Entities\MongoEntity.cs" />
     <Compile Include="MongoRefConvention.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repository.cs" />
-    <Compile Include="USNJournalMongoEntry.cs" />
+    <Compile Include="Entities\USNJournalMongoEntry.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

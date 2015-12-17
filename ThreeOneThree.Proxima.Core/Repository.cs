@@ -9,6 +9,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
+using ThreeOneThree.Proxima.Core.Entities;
 using Utilities.DataTypes;
 
 namespace ThreeOneThree.Proxima.Core

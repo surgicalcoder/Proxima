@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
+using ThreeOneThree.Proxima.Core.Entities;
 
 namespace ThreeOneThree.Proxima.Agent
 {
