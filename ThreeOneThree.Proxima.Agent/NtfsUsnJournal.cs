@@ -152,7 +152,6 @@ namespace ThreeOneThree.Proxima.Agent
                 MountPoint = MountPoint + "\\";
             }
 
-            //_driveInfo = driveInfo;
             _mountPoint = MountPoint;
             
             if (0 == string.Compare(Win32Api.GetVolumeType(MountPoint), "ntfs", true))
@@ -1077,10 +1076,7 @@ namespace ThreeOneThree.Proxima.Agent
             //
             UsnJournalReturnCode usnRtnCode = UsnJournalReturnCode.USN_JOURNAL_SUCCESS;
             rootHandle = IntPtr.Zero;
-            string vol = string.Concat("\\\\.\\", _mountPoint.TrimEnd('\\'));
-            //string vol = _volumePath; //string.Concat("\\\\.\\", _driveInfo.Name.TrimEnd('\\'));
-
-
+            string vol = _volumePath.TrimEnd('\\');
 
             rootHandle = Win32Api.CreateFile(vol,
                 Win32Api.GENERIC_READ | Win32Api.GENERIC_WRITE,
