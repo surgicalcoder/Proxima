@@ -71,7 +71,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdminCommands.cs" />
     <Compile Include="DriveConstruct.cs" />
+    <Compile Include="JournalPathEqualityComparer.cs" />
     <Compile Include="NtfsUsnJournal.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

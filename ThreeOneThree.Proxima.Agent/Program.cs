@@ -49,30 +49,16 @@ namespace ThreeOneThree.Proxima.Agent
 
             try
             {
-                var parsed = Args.Parse<MyArgs>(args);
-                Console.WriteLine("You entered string '{0}' and int '{1}'", parsed.StringArg, parsed.IntArg);
+                Args.InvokeAction<AdminCommands>(args);
+                
+                //Console.WriteLine("You entered string '{0}' and int '{1}'", parsed.StringArg, parsed.IntArg);
             }
             catch (ArgException ex)
             {
                 Console.WriteLine(ex.Message);
-                Console.WriteLine(ArgUsage.GenerateUsageFromTemplate<MyArgs>());
             }
 
 
         }
     }
-
-    public class MyArgs
-    {
-        // This argument is required and if not specified the user will 
-        // be prompted.
-        [ArgRequired(PromptIfMissing = true)]
-        public string StringArg { get; set; }
-
-        // This argument is not required, but if specified must be >= 0 and <= 60
-        [ArgRange(0, 60)]
-        public int IntArg { get; set; }
-    }
-
-
 }

@@ -24,15 +24,17 @@ namespace ThreeOneThree.Proxima.Agent
                 foreach (var syncFrom in syncFroms)
                 {
 
-                    var changedFiles = repo.Many<USNJournalMongoEntry>(e => e.CausedBySync == false && e.USN >= syncFrom.CurrentUSNLocation).ToList();
+                    var changedFiles = repo.Many<USNJournalMongoEntry>(e => e.CausedBySync == false && e.USN >= syncFrom.CurrentUSNLocation).ToList().Distinct(new JournalPathEqualityComparer()).ToList();
 
                     
-
                     changedFiles.ForEach(delegate(USNJournalMongoEntry f)
                     {
                         USNJournalSyncLog log = new USNJournalSyncLog()
                         {
-                            Enqueued = DateTime.Now, DestinationMachine = Environment.MachineName.ToLowerInvariant(), SourceMachine =  syncFrom.SourceMachine, Entry = f
+                            Enqueued = DateTime.Now,
+                            DestinationMachine = Environment.MachineName.ToLowerInvariant(),
+                            SourceMachine =  syncFrom.SourceMachine,
+                            Entry = f
                         };
                         
                         repo.Upsert(log);
