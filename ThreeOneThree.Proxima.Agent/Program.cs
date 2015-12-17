@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
+using NLog;
 using PowerArgs;
 using Quartz;
 using Topshelf;
@@ -13,6 +14,7 @@ namespace ThreeOneThree.Proxima.Agent
     class Program
     {
         static private List<string> TopshelfParameters = new List<string> { "install" ,"start","stop","uninstall"};
+        private static Logger logger = LogManager.GetCurrentClassLogger();
 
         static void Main(string[] args)
         {

@@ -195,11 +195,15 @@ namespace ThreeOneThree.Proxima.Core
         {
             var mongoCollection = mongoDatabase.GetCollection<T>(GetCollectionNameForType<T>(OverrideCollectionName));
 
-            //if (!mongoCollection.Exists())
-            //{
-            //    return null;
-            //}
             return mongoCollection.Find(predicate).ToListAsync().Result.FirstOrDefault();
+        }
+
+        public long Count<T>(Expression<Func<T, bool>> predicate, string OverrideCollectionName = "") where T : MongoEntity
+        {
+            var mongoCollection = mongoDatabase.GetCollection<T>(GetCollectionNameForType<T>(OverrideCollectionName));
+
+            return mongoCollection.Count(predicate);
+
         }
 
         public IQueryable<T> Many<T>(Expression<Func<T, bool>> predicate, string OverrideCollectionName = "") where T : MongoEntity

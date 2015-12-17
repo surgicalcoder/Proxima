@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using NLog;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
 using ThreeOneThree.Proxima.Core.Entities;
@@ -11,6 +12,9 @@ namespace ThreeOneThree.Proxima.Agent
     [DisallowConcurrentExecution]
     public class USNJournalSync : IJob
     {
+        private static Logger logger = LogManager.GetCurrentClassLogger();
+
+
         public void Execute(IJobExecutionContext context)
         {
             if (USNJournalSingleton.Instance.DrivesToMonitor == null || USNJournalSingleton.Instance.DrivesToMonitor.Count == 0)
@@ -23,12 +27,15 @@ namespace ThreeOneThree.Proxima.Agent
             {
                 var syncFroms = repo.Many<USNJournalSyncFrom>(e => e.DestinationMachine == Environment.MachineName.ToLowerInvariant());
 
+                
+
                 foreach (var syncFrom in syncFroms)
                 {
                     var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync.HasValue && e.USN >= syncFrom.CurrentUSNLocation && e.MachineName == syncFrom.SourceMachine.ToLowerInvariant()).ToList();
                     var changedFiles = PerformRollup(rawEntries).ToList();
 
-                    
+                    long lastUsn = rawEntries.LastOrDefault().USN;
+
                     foreach (var fileAction in changedFiles)
                     {
                         USNJournalSyncLog log = new USNJournalSyncLog();
@@ -43,9 +50,14 @@ namespace ThreeOneThree.Proxima.Agent
                         USNJournalSingleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log));
 
                     }
+
+
+                    syncFrom.CurrentUSNLocation = lastUsn;
+                    repo.Upsert(syncFrom);
                 }
+
+
             }
-            
         }
 
 
@@ -83,6 +95,8 @@ namespace ThreeOneThree.Proxima.Agent
         {
             if (usnJournalMongoEntry.Action.DeleteFile)
             {
+
+                
                 // Delete File
             }
             else if (string.IsNullOrWhiteSpace(usnJournalMongoEntry.Action.RenameFrom))

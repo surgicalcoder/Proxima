@@ -88,7 +88,7 @@ namespace ThreeOneThree.Proxima.Agent
                             dbEntry.MachineName = Environment.MachineName.ToLower();
                             dbEntry.TimeStamp = entry.TimeStamp;
                             dbEntry.UniversalPath = GetRemotePath(actualPath);
-
+                            dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f => (f.ActionStartDate.HasValue && entry.TimeStamp > f.ActionStartDate) || (f.ActionFinishDate.HasValue  && entry.TimeStamp < f.ActionFinishDate ) ) > 0;
 
                             PopulateFlags(dbEntry, entry);
                             entries.Add(dbEntry);
