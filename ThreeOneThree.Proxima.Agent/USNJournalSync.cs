@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.IO;
 using System.Linq;
 using NLog;
 using Quartz;
@@ -91,21 +93,35 @@ namespace ThreeOneThree.Proxima.Agent
 
         }
 
-        private void TransferItem(USNJournalSyncLog usnJournalMongoEntry)
+        private void TransferItem(USNJournalSyncLog syncLog)
         {
-            if (usnJournalMongoEntry.Action.DeleteFile)
+            if (syncLog.Action.DeleteFile)
             {
+                logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.Path}");
 
+                if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
+                {
+                    File.Delete(syncLog.Action.Path);
+                }
                 
-                // Delete File
             }
-            else if (string.IsNullOrWhiteSpace(usnJournalMongoEntry.Action.RenameFrom))
+            else if (string.IsNullOrWhiteSpace(syncLog.Action.RenameFrom))
             {
-                // Move File
+                logger.Info($"[{syncLog.Id}] Moving {syncLog.Action.RenameFrom} to {syncLog.Action.Path}");
+
+                if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
+                {
+                    File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
+                }
             }
             else
             {
-                // Copy File from other node.
+                logger.Info($"[{syncLog.Id}] Copying {syncLog.Action.Path}");
+
+                if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
+                {
+                    File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path);
+                }
             }
         }
     }
