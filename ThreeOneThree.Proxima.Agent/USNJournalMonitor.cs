@@ -105,6 +105,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                         construct.CurrentJournalData = newUsnState;
                         sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
+                        Console.WriteLine(sourceMount.CurrentUSNLocation);
                         repo.Update(sourceMount);
 
                     }

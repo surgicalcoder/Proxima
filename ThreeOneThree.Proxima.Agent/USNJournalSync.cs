@@ -73,6 +73,15 @@ namespace ThreeOneThree.Proxima.Agent
 
             foreach (var entry in toList)
             {
+                if (entry.FileCreate.HasValue)
+                {
+                    toReturn.Add(new FileAction()
+                    {
+                        CreateFile = true,
+                        Path = GetRelativePath(entry.Path, syncFrom),
+                        USN = entry.USN,
+                    });
+                }
                 if (entry.RenameNewName.HasValue)
                 {
                     toReturn.Add(new FileAction()
@@ -123,6 +132,19 @@ namespace ThreeOneThree.Proxima.Agent
                     Singleton.Instance.Repository.Update(syncLog);
                 }
                 
+            }
+            else if (syncLog.Action.CreateFile)
+            {
+                logger.Info($"[{syncLog.Id}] Create {syncLog.Action.Path}");
+                if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
+                {
+                    syncLog.ActionStartDate = DateTime.Now;
+                    Singleton.Instance.Repository.Update(syncLog);
+                    System.IO.File.Create(syncLog.Action.Path);
+                    syncLog.ActionFinishDate = DateTime.Now;
+                    Singleton.Instance.Repository.Update(syncLog);
+
+                }
             }
             else if (string.IsNullOrWhiteSpace(syncLog.Action.RenameFrom))
             {
