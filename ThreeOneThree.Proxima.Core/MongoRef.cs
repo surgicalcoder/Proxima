@@ -23,7 +23,7 @@ namespace ThreeOneThree.Proxima.Core
         {
             return new MongoRef<T>(item);
         }
-
+        
         private string _refId;
 
         public T Reference { get; set; }

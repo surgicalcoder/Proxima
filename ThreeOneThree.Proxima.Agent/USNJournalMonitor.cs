@@ -39,7 +39,7 @@ namespace ThreeOneThree.Proxima.Agent
 
         public void Execute(IJobExecutionContext context)
         {
-            if (USNJournalSingleton.Instance.DrivesToMonitor == null || USNJournalSingleton.Instance.DrivesToMonitor.Count == 0)
+            if (Singleton.Instance.SourceMountpoints == null || Singleton.Instance.SourceMountpoints.Count == 0)
             {
                 return;
             }
@@ -48,13 +48,15 @@ namespace ThreeOneThree.Proxima.Agent
             {
                 List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>();
 
-                foreach (var construct in USNJournalSingleton.Instance.DrivesToMonitor)
+                foreach (var sourceMount in Singleton.Instance.SourceMountpoints)
                 {
-
+                    var construct = new DriveConstruct(sourceMount.MountPoint);
                     Win32Api.USN_JOURNAL_DATA newUsnState;
                     List<Win32Api.UsnEntry> usnEntries;
 
                     NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
+
+                    //repo.Many<USNJournalSyncFrom>(f=>f.SourceMachine == Environment.MachineName.ToLowerInvariant())
 
                     var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState);
 
@@ -85,7 +87,8 @@ namespace ThreeOneThree.Proxima.Agent
                             dbEntry.PFRN = entry.ParentFileReferenceNumber;
                             dbEntry.RecordLength = entry.RecordLength;
                             dbEntry.USN = entry.USN;
-                            dbEntry.MachineName = Environment.MachineName.ToLower();
+                            dbEntry.Mountpoint = sourceMount; 
+//                            dbEntry.MachineName = Environment.MachineName.ToLower();
                             dbEntry.TimeStamp = entry.TimeStamp;
                             dbEntry.UniversalPath = GetRemotePath(actualPath);
                             dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f => (f.ActionStartDate.HasValue && entry.TimeStamp > f.ActionStartDate) || (f.ActionFinishDate.HasValue  && entry.TimeStamp < f.ActionFinishDate ) ) > 0;

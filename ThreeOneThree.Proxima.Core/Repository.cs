@@ -99,7 +99,7 @@ namespace ThreeOneThree.Proxima.Core
             
             if (!mongoDatabase.GetCollection<USNJournalMongoEntry>(GetCollectionNameForType<USNJournalMongoEntry>("")).Indexes.List().Any())
             {
-                mongoDatabase.GetCollection<USNJournalMongoEntry>(GetCollectionNameForType<USNJournalMongoEntry>("")).Indexes.CreateOne(Builders<USNJournalMongoEntry>.IndexKeys.Ascending(e => e.MachineName).Ascending(e => e.USN));
+                mongoDatabase.GetCollection<USNJournalMongoEntry>(GetCollectionNameForType<USNJournalMongoEntry>("")).Indexes.CreateOne(Builders<USNJournalMongoEntry>.IndexKeys.Ascending(e => e.Mountpoint).Ascending(e => e.USN));
             }
 
             InitRun = true;

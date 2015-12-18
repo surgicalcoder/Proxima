@@ -4,7 +4,8 @@ namespace ThreeOneThree.Proxima.Core.Entities
 {
     public class USNJournalMongoEntry : MongoEntity
     {
-        public string MachineName { get; set; }
+        //public string MachineName { get; set; }
+        public MongoRef<MonitoredMountpoint> Mountpoint { get; set; }
         public string Path { get; set; }
         public string UniversalPath { get; set; }
         public bool? File { get; set; }
@@ -18,7 +19,7 @@ namespace ThreeOneThree.Proxima.Core.Entities
 
         public long USN { get; set; }
 
-        public bool? CausedBySync { get; set; }
+        public bool CausedBySync { get; set; }
 
         public DateTime TimeStamp { get; set; }
 
@@ -43,5 +44,36 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public bool? ReparsePointChange { get; set; }
         public bool? StreamChange { get; set; }
         public bool? Close { get; set; }
+    }
+
+
+    public class Server : MongoEntity
+    {
+        public Server(string machineName)
+        {
+            MachineName = machineName.ToLowerInvariant();
+        }
+
+        public string MachineName { get; set; }
+    }
+
+    public class MonitoredMountpoint : MongoEntity
+    {
+        public MongoRef<Server> Server { get; set; }
+
+        public string MountPoint { get; set; }
+
+        public long CurrentUSNLocation { get; set; }
+    }
+
+    public class SyncMountpoint : MongoEntity
+    {
+        public MongoRef<MonitoredMountpoint> Mountpoint { get; set; }
+
+        public MongoRef<Server> DestinationServer { get; set; }
+
+        public string Path { get; set; }
+
+        public long LastUSN { get; set; }
     }
 }

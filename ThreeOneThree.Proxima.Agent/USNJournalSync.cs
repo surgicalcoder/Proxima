@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.IO;
+//using System.IO;
 using System.Linq;
+using Fluent.IO;
 using NLog;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
@@ -19,7 +20,7 @@ namespace ThreeOneThree.Proxima.Agent
 
         public void Execute(IJobExecutionContext context)
         {
-            if (USNJournalSingleton.Instance.DrivesToMonitor == null || USNJournalSingleton.Instance.DrivesToMonitor.Count == 0)
+            if (Singleton.Instance.DestinationMountpoints == null || Singleton.Instance.DestinationMountpoints.Count == 0)
             {
                 return;
             }
@@ -27,14 +28,13 @@ namespace ThreeOneThree.Proxima.Agent
 
             using (Repository repo = new Repository())
             {
-                var syncFroms = repo.Many<USNJournalSyncFrom>(e => e.DestinationMachine == Environment.MachineName.ToLowerInvariant());
-
-                
-
-                foreach (var syncFrom in syncFroms)
+               foreach (var syncFrom in Singleton.Instance.DestinationMountpoints)
                 {
-                    var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync.HasValue && e.USN >= syncFrom.CurrentUSNLocation && e.MachineName == syncFrom.SourceMachine.ToLowerInvariant()).ToList();
-                    var changedFiles = PerformRollup(rawEntries).ToList();
+                    syncFrom.DestinationServer.Fetch(Singleton.Instance.Servers);
+
+                    var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync && e.USN >= syncFrom.LastUSN && e.Mountpoint.ReferenceId == syncFrom.Mountpoint.ReferenceId ).ToList();
+
+                    var changedFiles = PerformRollup(rawEntries, syncFrom).ToList();
 
                     if (rawEntries.Count == 0)
                     {
@@ -47,60 +47,66 @@ namespace ThreeOneThree.Proxima.Agent
                     {
                         USNJournalSyncLog log = new USNJournalSyncLog();
                         log.Enqueued = DateTime.Now;
-                        log.DestinationMachine = Environment.MachineName.ToLowerInvariant();
-                        log.SourceMachine = syncFrom.SourceMachine;
+                        log.DestinationMachine = Singleton.Instance.CurrentServer;
+                        log.SourceMachine = syncFrom.Mountpoint.Reference.Server;
                         log.Entry = rawEntries.FirstOrDefault(f=>f.USN == fileAction.USN);
                         log.Action = fileAction;
 
                         repo.Upsert(log);
 
-                        USNJournalSingleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log));
+                        Singleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log));
 
                     }
-
-
-                    syncFrom.CurrentUSNLocation = lastUsn;
+                    syncFrom.LastUSN = lastUsn;
                     repo.Upsert(syncFrom);
                 }
-
-
             }
         }
 
-
-
-
-        private IEnumerable<FileAction> PerformRollup(List<USNJournalMongoEntry> toList)
+        private List<FileAction> PerformRollup(List<USNJournalMongoEntry> toList, SyncMountpoint syncFrom)
         {
             toList.Where(f=>f.Close.HasValue && f.Close.Value).ToList().Sort((entry, mongoEntry) => entry.USN.CompareTo(mongoEntry.USN));
+
+            var toReturn = new List<FileAction>();
 
             foreach (var entry in toList)
             {
                 if (entry.RenameNewName.HasValue)
                 {
-                    yield return new FileAction()
+                    toReturn.Add(new FileAction()
                     {
                         RenameFrom = toList.FirstOrDefault(f=>f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN).Path,
-                        Path = entry.Path,
+                        Path = GetRelativePath(entry.Path, syncFrom),
                         USN = entry.USN,
-                    };
+                    });
                 }
                 else if (entry.FileDelete.HasValue)
                 {
-                    yield return new FileAction() { Path = entry.Path, USN = entry.USN, DeleteFile = true};
+                    toReturn.RemoveAll(f => f.Path == entry.Path);
+                    toReturn.Add(new FileAction() { Path = entry.Path, USN = entry.USN, DeleteFile = true});
                 }
                 else
                 {
-                    yield return new FileAction() {Path = entry.Path, USN = entry.USN};
+                    toReturn.RemoveAll(f => f.Path == entry.Path && !f.DeleteFile && string.IsNullOrWhiteSpace(f.RenameFrom));
+                    toReturn.Add(new FileAction() {Path = entry.Path, USN = entry.USN});
                 }
             }
 
+            return toReturn;
+        }
 
+        private string GetRelativePath(string path, SyncMountpoint syncFrom)
+        {
+
+            var relativePath = Path.Get(path).MakeRelativeTo(syncFrom.Mountpoint.Reference.MountPoint.TrimEnd('\\'));
+
+            var finalPath = Path.Get(syncFrom.Path).Add(relativePath);
+            return finalPath.FullPath;
         }
 
         private void TransferItem(USNJournalSyncLog syncLog)
         {
-            return;
+           // return;
             if (syncLog.Action.DeleteFile)
             {
                 logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.Path}");
@@ -108,10 +114,10 @@ namespace ThreeOneThree.Proxima.Agent
                 if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                 {
                     syncLog.ActionStartDate = DateTime.Now;
-                    USNJournalSingleton.Instance.Repository.Update(syncLog);
-                    File.Delete(syncLog.Action.Path);
+                    Singleton.Instance.Repository.Update(syncLog);
+                    System.IO.File.Delete(syncLog.Action.Path);
                     syncLog.ActionFinishDate = DateTime.Now;
-                    USNJournalSingleton.Instance.Repository.Update(syncLog);
+                    Singleton.Instance.Repository.Update(syncLog);
                 }
                 
             }
@@ -122,10 +128,10 @@ namespace ThreeOneThree.Proxima.Agent
                 if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                 {
                     syncLog.ActionStartDate = DateTime.Now;
-                    USNJournalSingleton.Instance.Repository.Update(syncLog);
-                    File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
+                    Singleton.Instance.Repository.Update(syncLog);
+                    System.IO.File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
                     syncLog.ActionFinishDate = DateTime.Now;
-                    USNJournalSingleton.Instance.Repository.Update(syncLog);
+                    Singleton.Instance.Repository.Update(syncLog);
                     
                 }
             }
@@ -136,10 +142,10 @@ namespace ThreeOneThree.Proxima.Agent
                 if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                 {
                     syncLog.ActionStartDate = DateTime.Now;
-                    USNJournalSingleton.Instance.Repository.Update(syncLog);
-                    File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path);
+                    Singleton.Instance.Repository.Update(syncLog);
+                    System.IO.File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path);
                     syncLog.ActionFinishDate = DateTime.Now;
-                    USNJournalSingleton.Instance.Repository.Update(syncLog);
+                    Singleton.Instance.Repository.Update(syncLog);
                 }
             }
         }

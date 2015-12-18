@@ -4,9 +4,8 @@ namespace ThreeOneThree.Proxima.Core.Entities
 {
     public class USNJournalSyncLog : MongoEntity
     {
-        public string SourceMachine { get; set; }
-
-        public string DestinationMachine { get; set; }
+        public MongoRef<Server> SourceMachine { get; set; }
+        public MongoRef<Server> DestinationMachine { get; set; }
 
 
         public MongoRef<USNJournalMongoEntry> Entry { get; set; }

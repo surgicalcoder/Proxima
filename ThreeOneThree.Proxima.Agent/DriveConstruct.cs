@@ -16,6 +16,7 @@ namespace ThreeOneThree.Proxima.Agent
         public DriveInfo DriveInfo { get; set; }
         public Win32Api.USN_JOURNAL_DATA CurrentJournalData { get; set; }
 
+        public long LastUSN { get; set; }
         public bool HavePerformedRewind { get; set; }
     }
 }

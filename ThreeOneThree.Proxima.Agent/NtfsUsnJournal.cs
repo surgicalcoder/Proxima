@@ -163,7 +163,7 @@ namespace ThreeOneThree.Proxima.Agent
                 ManagementObjectSearcher searcher = new ManagementObjectSearcher("root\\cimv2", @"select * from Win32_Volume");
 
                 var volume = (from ManagementObject ob in searcher.Get()
-                              where ob["Caption"] != null && ob["Caption"].ToString() == MountPoint
+                              where ob["Caption"] != null && ob["Caption"].ToString().ToLowerInvariant() == MountPoint.ToLowerInvariant()
                               select ob["DeviceID"].ToString()).FirstOrDefault();
 
 
@@ -780,7 +780,7 @@ namespace ThreeOneThree.Proxima.Agent
             GetUsnJournalEntries(Win32Api.USN_JOURNAL_DATA previousUsnState,
                                  UInt32 reasonMask,
                                  out List<Win32Api.UsnEntry> usnEntries,
-                                 out Win32Api.USN_JOURNAL_DATA newUsnState)
+                                 out Win32Api.USN_JOURNAL_DATA newUsnState, long OverrideLastUsn=-1)
         {
             DateTime startTime = DateTime.Now;
             usnEntries = new List<Win32Api.UsnEntry>();
@@ -807,7 +807,9 @@ namespace ThreeOneThree.Proxima.Agent
                         uint outBytesReturned = 0;
 
                         Win32Api.READ_USN_JOURNAL_DATA rujd = new Win32Api.READ_USN_JOURNAL_DATA();
-                        rujd.StartUsn = previousUsnState.NextUsn;
+
+                        rujd.StartUsn = OverrideLastUsn > -1 ? OverrideLastUsn : previousUsnState.NextUsn;
+
                         rujd.ReasonMask = reasonMask;
                         rujd.ReturnOnlyOnClose = 0;
                         rujd.Timeout = 0;

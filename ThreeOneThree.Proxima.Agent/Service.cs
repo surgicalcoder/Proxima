@@ -8,7 +8,7 @@ namespace ThreeOneThree.Proxima.Agent
         
         public bool Start(HostControl hostControl)
         {
-            USNJournalSingleton.Instance.ThreadPool.MaxThreads = 128;
+            Singleton.Instance.ThreadPool.MaxThreads = 128;
             return true;
         }
 

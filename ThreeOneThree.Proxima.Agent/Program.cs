@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using NLog;
 using PowerArgs;
 using Quartz;
+using ThreeOneThree.Proxima.Core;
+using ThreeOneThree.Proxima.Core.Entities;
 using Topshelf;
 using Topshelf.Quartz;
 
@@ -18,7 +20,22 @@ namespace ThreeOneThree.Proxima.Agent
 
         static void Main(string[] args)
         {
-            USNJournalSingleton.Instance.DrivesToMonitor = ConfigurationManager.AppSettings["DrivesToMonitor"].Split(';').Select(e=>new DriveConstruct(e)).ToList();
+            using(Repository repo = new Repository())
+            {
+                Singleton.Instance.Servers = repo.All<Server>().ToList();
+
+                var currentServer = Singleton.Instance.Servers.FirstOrDefault(f => f.MachineName == Environment.MachineName.ToLowerInvariant());
+                if (currentServer == null)
+                {
+                    currentServer = new Server(Environment.MachineName);
+                    repo.Add(currentServer);
+                    Singleton.Instance.Servers.Add(currentServer);
+                }
+
+                Singleton.Instance.CurrentServer = currentServer;
+                Singleton.Instance.DestinationMountpoints = repo.Many<SyncMountpoint>(f => f.DestinationServer.ReferenceId == currentServer.Id).ToList();
+                Singleton.Instance.SourceMountpoints = repo.Many<MonitoredMountpoint>(f => f.Server.ReferenceId == currentServer.Id).ToList();
+            }
 
             if (args.Length == 0 || TopshelfParameters.Contains(args[0].ToLowerInvariant()))
             {
@@ -51,7 +68,7 @@ namespace ThreeOneThree.Proxima.Agent
 
             try
             {
-                Args.InvokeAction<AdminCommands>(args);
+               // Args.InvokeAction<AdminCommands>(args);
             }
             catch (ArgException ex)
             {
