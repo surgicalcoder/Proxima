@@ -68,6 +68,19 @@ namespace ThreeOneThree.Proxima.Agent
 
             try
             {
+                if (args[0].ToLowerInvariant() == "source")
+                {
+                    Args.InvokeAction<ConsoleCommands.Source>(args.Skip(1).ToArray());
+                }
+                else if (args[0].ToLowerInvariant() == "dest")
+                {
+                    Args.InvokeAction<ConsoleCommands.Dest>(args.Skip(1).ToArray());
+                }
+                else
+                {
+                    Console.WriteLine("Missing type of config - source or dest");
+                    return;
+                }
                // Args.InvokeAction<AdminCommands>(args);
             }
             catch (ArgException ex)

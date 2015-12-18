@@ -81,7 +81,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AdminCommands.cs" />
+    <Compile Include="ConsoleCommands\AdminCommands.cs" />
     <Compile Include="DriveConstruct.cs" />
     <Compile Include="JournalPathEqualityComparer.cs" />
     <Compile Include="NtfsUsnJournal.cs" />
