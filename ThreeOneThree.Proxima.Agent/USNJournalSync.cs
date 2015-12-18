@@ -34,7 +34,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                     syncFrom.Mountpoint.Reference = repo.ById<MonitoredMountpoint>(syncFrom.Mountpoint.ReferenceId);
 
-                    var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync && e.USN >= syncFrom.LastUSN && e.Mountpoint.ReferenceId == syncFrom.Mountpoint.ReferenceId ).ToList();
+                    var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync && e.USN >= syncFrom.LastUSN && e.Mountpoint.ReferenceId == syncFrom.Mountpoint.ReferenceId && e.Path != "#UNKNOWN#").ToList();
 
                     var changedFiles = PerformRollup(rawEntries, syncFrom).ToList();
 
@@ -109,7 +109,7 @@ namespace ThreeOneThree.Proxima.Agent
 
         private void TransferItem(USNJournalSyncLog syncLog)
         {
-            return;
+            // return;
             if (syncLog.Action.DeleteFile)
             {
                 logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.Path}");

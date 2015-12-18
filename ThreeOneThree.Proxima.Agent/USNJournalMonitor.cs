@@ -58,7 +58,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                     //repo.Many<USNJournalSyncFrom>(f=>f.SourceMachine == Environment.MachineName.ToLowerInvariant())
 
-                    var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState);
+                    var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
 
                     if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                     {
@@ -72,12 +72,18 @@ namespace ThreeOneThree.Proxima.Agent
 
                             if (usnRtnCode == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS && 0 != String.Compare(rawPath, "Unavailable", StringComparison.OrdinalIgnoreCase))
                             {
-                                actualPath = $"{journal.MountPoint.TrimEnd('\\')}{rawPath}\\{entry.Name}";
+                                actualPath = $"{journal.MountPoint.TrimEnd('\\')}{rawPath.TrimEnd('\\')}\\{entry.Name}";
                             }
                             else
                             {
                                 actualPath = "#UNKNOWN#";
                             }
+
+                            if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant()) || actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+                            {
+                                continue;
+                            }
+                            //if (actualPath.StartsWith($"{journal.MountPoint.TrimEnd('\\')}" ))
 
                             var dbEntry = new USNJournalMongoEntry();
                             dbEntry.Path = actualPath;
@@ -98,6 +104,8 @@ namespace ThreeOneThree.Proxima.Agent
                         }
 
                         construct.CurrentJournalData = newUsnState;
+                        sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
+                        repo.Update(sourceMount);
 
                     }
                     else
