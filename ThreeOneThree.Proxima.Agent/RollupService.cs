@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,19 +13,22 @@ namespace ThreeOneThree.Proxima.Agent
     {
         public static List<FileAction> PerformRollup(List<USNJournalMongoEntry> rawEntries, SyncMountpoint syncFrom)
         {
-            var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value) ).ToList();
-            entries.Sort((entry, mongoEntry) => entry.USN.CompareTo(mongoEntry.USN));
-
+            var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value)).OrderBy(f => f.Path)/*.Distinct(new JournalPathEqualityComparer())*/;
+            
             var toReturn = new List<FileAction>();
 
             foreach (var entry in entries)
             {
+
+                var relativePath = GetRelativePath(entry.Path, syncFrom);
+
                 if (entry.FileCreate.HasValue)
                 {
                     toReturn.Add(new FileAction()
                     {
+                        SourcePath = entry.Path,
                         CreateFile = true,
-                        Path = GetRelativePath(entry.Path, syncFrom),
+                        Path = relativePath,
                         USN = entry.USN,
                     });
                 }
@@ -32,42 +36,45 @@ namespace ThreeOneThree.Proxima.Agent
                 {
                     var item = new FileAction();
                     item.RenameFrom = rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN).Path;
-                    item.Path = GetRelativePath(entry.Path, syncFrom);
+                    item.Path = relativePath;
                     item.USN = entry.USN;
+                    item.SourcePath = entry.Path;
 
                     toReturn.Add(item);
                 }
                 else if (entry.FileDelete.HasValue)
                 {
-                    toReturn.RemoveAll(f => f.Path == entry.Path);
                     toReturn.Add(new FileAction()
                     {
-                        Path = GetRelativePath(entry.Path, syncFrom),
+                        Path = relativePath,
                         USN = entry.USN,
-                        DeleteFile = true
+                        DeleteFile = true,
+                        SourcePath = entry.Path
                     });
                 }
                 else
                 {
-                    toReturn.RemoveAll(f => f.Path == entry.Path && !f.DeleteFile && string.IsNullOrWhiteSpace(f.RenameFrom));
-                    toReturn.Add(new FileAction() { Path = entry.Path, USN = entry.USN });
+                    toReturn.Add(new FileAction() { Path= relativePath, USN = entry.USN, SourcePath = entry.Path});
                 }
             }
 
 
+            var deletedFiles = toReturn.Where(f => f.DeleteFile).ToList();
 
-            var toDelete= toReturn.Where(e => 
-                e.CreateFile && 
-                toReturn.Where(f => f.DeleteFile).Select(f => f.Path).Contains(e.Path)
-            ).ToList();
+            foreach (var deletedFile in deletedFiles)
+            {
+                if (toReturn.Where(f => f.CreateFile).Select(f => f.Path).Contains(deletedFile.Path))
+                {
+                    toReturn.Remove(deletedFile);
+                }
 
-            toDelete.AddRange( toReturn.Where(e=>
-                e.DeleteFile && toReturn.Where(f=>f.CreateFile).Select(f=>f.Path).Contains(e.Path)
-            ) );
+                toReturn.RemoveAll(f => f.Path == deletedFile.Path && f.USN < deletedFile.USN);
+            }
 
-            toReturn.RemoveAll(f => toDelete.Contains(f));
+            var fileActions = toReturn.Select(e => e.Path).Distinct().Select(f => toReturn.FirstOrDefault(a => a.Path == f)).ToList();
 
-            return toReturn;
+
+            return fileActions;
         }
 
 
