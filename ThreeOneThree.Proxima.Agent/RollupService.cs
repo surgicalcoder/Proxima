@@ -5,12 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fluent.IO;
+using NLog;
 using ThreeOneThree.Proxima.Core.Entities;
 
 namespace ThreeOneThree.Proxima.Agent
 {
     public static class RollupService
     {
+        private static Logger logger = LogManager.GetCurrentClassLogger();
         public static List<FileAction> PerformRollup(List<USNJournalMongoEntry> rawEntries, SyncMountpoint syncFrom)
         {
             var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value)).OrderBy(f => f.Path)/*.Distinct(new JournalPathEqualityComparer())*/;
@@ -19,42 +21,56 @@ namespace ThreeOneThree.Proxima.Agent
 
             foreach (var entry in entries)
             {
-
-                var relativePath = GetRelativePath(entry.Path, syncFrom);
-
-                if (entry.FileCreate.HasValue)
+                try
                 {
-                    toReturn.Add(new FileAction()
+                    var relativePath = GetRelativePath(entry.Path, syncFrom);
+
+                    if (entry.FileCreate.HasValue)
                     {
-                        SourcePath = entry.Path,
-                        CreateFile = true,
-                        Path = relativePath,
-                        USN = entry.USN,
-                    });
-                }
-                else if (entry.RenameNewName.HasValue)
-                {
-                    var item = new FileAction();
-                    item.RenameFrom = rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN).Path;
-                    item.Path = relativePath;
-                    item.USN = entry.USN;
-                    item.SourcePath = entry.Path;
-
-                    toReturn.Add(item);
-                }
-                else if (entry.FileDelete.HasValue)
-                {
-                    toReturn.Add(new FileAction()
+                        toReturn.Add(new FileAction()
+                        {
+                            SourcePath = entry.Path,
+                            CreateFile = true,
+                            Path = relativePath,
+                            USN = entry.USN,
+                        });
+                    }
+                    else if (entry.RenameNewName.HasValue)
                     {
-                        Path = relativePath,
-                        USN = entry.USN,
-                        DeleteFile = true,
-                        SourcePath = entry.Path
-                    });
+                        var item = new FileAction();
+                        if (rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN) == null)
+                        {
+                            item.RenameFrom = Singleton.Instance.Repository.One<USNJournalMongoEntry>(f => f.FRN == entry.FRN && f.PFRN == entry.PFRN && f.RenameOldName.HasValue).Path;
+                        }
+                        else
+                        {
+                            item.RenameFrom = rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN).Path;
+                        }
+                        item.Path = relativePath;
+                        item.USN = entry.USN;
+                        item.SourcePath = entry.Path;
+
+                        toReturn.Add(item);
+                    }
+                    else if (entry.FileDelete.HasValue)
+                    {
+                        toReturn.Add(new FileAction()
+                        {
+                            Path = relativePath,
+                            USN = entry.USN,
+                            DeleteFile = true,
+                            SourcePath = entry.Path
+                        });
+                    }
+                    else
+                    {
+                        toReturn.Add(new FileAction() { Path= relativePath, USN = entry.USN, SourcePath = entry.Path});
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    toReturn.Add(new FileAction() { Path= relativePath, USN = entry.USN, SourcePath = entry.Path});
+                    logger.Error("Error processing item " + entry.Id, e);
+                    continue;
                 }
             }
 
