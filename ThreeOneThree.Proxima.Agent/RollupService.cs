@@ -15,7 +15,7 @@ namespace ThreeOneThree.Proxima.Agent
         private static Logger logger = LogManager.GetCurrentClassLogger();
         public static List<FileAction> PerformRollup(List<USNJournalMongoEntry> rawEntries, SyncMountpoint syncFrom)
         {
-            var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value)).OrderBy(f => f.Path)/*.Distinct(new JournalPathEqualityComparer())*/;
+            var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value)).OrderBy(f => f.Path).ThenBy(f=>f.FileCreate)/*.Distinct(new JournalPathEqualityComparer())*/;
             
             var toReturn = new List<FileAction>();
 

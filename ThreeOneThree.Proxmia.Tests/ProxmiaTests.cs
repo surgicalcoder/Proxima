@@ -122,6 +122,22 @@ namespace ThreeOneThree.Proxmia.Tests
             Assert.AreEqual(false, result[0].DeleteFile);
         }
 
+        [Test]
+        public void FavourCopyVSCreate()
+        {
+            List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>
+            {
+                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10000, FRN = 1001, PFRN = 1002, FileCreate = true},
+                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 13000, FRN = 1001, PFRN = 1002},
+            };
+
+
+            var result = RollupService.PerformRollup(entries, mountPoint);
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(false, result[0].CreateFile);
+        }
+
 
         
     }
