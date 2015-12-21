@@ -34,7 +34,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                     syncFrom.Mountpoint.Reference = repo.ById<MonitoredMountpoint>(syncFrom.Mountpoint.ReferenceId);
 
-                    var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync && e.USN >= syncFrom.LastUSN && e.Mountpoint.ReferenceId == syncFrom.Mountpoint.ReferenceId && e.Path != "#UNKNOWN#").ToList();
+                    var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync && e.USN > syncFrom.LastUSN && e.Mountpoint.ReferenceId == syncFrom.Mountpoint.ReferenceId && e.Path != "#UNKNOWN#").ToList();
 
                     var changedFiles = RollupService.PerformRollup(rawEntries, syncFrom).ToList();
 
@@ -54,13 +54,13 @@ namespace ThreeOneThree.Proxima.Agent
                         log.Entry = rawEntries.FirstOrDefault(f=>f.USN == fileAction.USN);
                         log.Action = fileAction;
 
-                        repo.Upsert(log);
+                        repo.Add(log);
 
                         Singleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log));
 
                     }
                     syncFrom.LastUSN = lastUsn;
-                    repo.Upsert(syncFrom);
+                    repo.Update(syncFrom);
                 }
             }
         }
@@ -98,7 +98,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                 }
             }
-            else if (string.IsNullOrWhiteSpace(syncLog.Action.RenameFrom))
+            else if (!string.IsNullOrWhiteSpace(syncLog.Action.RenameFrom))
             {
                 logger.Info($"[{syncLog.Id}] Moving {syncLog.Action.RenameFrom} to {syncLog.Action.Path}");
 
