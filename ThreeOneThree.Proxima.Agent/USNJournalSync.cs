@@ -81,6 +81,7 @@ namespace ThreeOneThree.Proxima.Agent
                     Singleton.Instance.Repository.Update(syncLog);
                     System.IO.File.Delete(syncLog.Action.Path);
                     syncLog.ActionFinishDate = DateTime.Now;
+                    syncLog.Successfull = true;
                     Singleton.Instance.Repository.Update(syncLog);
                 }
                 
@@ -94,6 +95,7 @@ namespace ThreeOneThree.Proxima.Agent
                     Singleton.Instance.Repository.Update(syncLog);
                     System.IO.File.Create(syncLog.Action.Path);
                     syncLog.ActionFinishDate = DateTime.Now;
+                    syncLog.Successfull = true;
                     Singleton.Instance.Repository.Update(syncLog);
 
                 }
@@ -108,6 +110,7 @@ namespace ThreeOneThree.Proxima.Agent
                     Singleton.Instance.Repository.Update(syncLog);
                     System.IO.File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
                     syncLog.ActionFinishDate = DateTime.Now;
+                    syncLog.Successfull = true;
                     Singleton.Instance.Repository.Update(syncLog);
                     
                 }
@@ -122,6 +125,7 @@ namespace ThreeOneThree.Proxima.Agent
                     Singleton.Instance.Repository.Update(syncLog);
                     System.IO.File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path);
                     syncLog.ActionFinishDate = DateTime.Now;
+                    syncLog.Successfull = true;
                     Singleton.Instance.Repository.Update(syncLog);
                 }
             }
