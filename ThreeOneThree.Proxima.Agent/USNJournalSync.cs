@@ -36,7 +36,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                     var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync && e.USN >= syncFrom.LastUSN && e.Mountpoint.ReferenceId == syncFrom.Mountpoint.ReferenceId && e.Path != "#UNKNOWN#").ToList();
 
-                    var changedFiles = PerformRollup(rawEntries, syncFrom).ToList();
+                    var changedFiles = RollupService.PerformRollup(rawEntries, syncFrom).ToList();
 
                     if (rawEntries.Count == 0)
                     {
@@ -65,56 +65,8 @@ namespace ThreeOneThree.Proxima.Agent
             }
         }
 
-        private List<FileAction> PerformRollup(List<USNJournalMongoEntry> toList, SyncMountpoint syncFrom)
-        {
-            toList.Where(f=>f.Close.HasValue && f.Close.Value).ToList().Sort((entry, mongoEntry) => entry.USN.CompareTo(mongoEntry.USN));
 
-            var toReturn = new List<FileAction>();
 
-            foreach (var entry in toList)
-            {
-                if (entry.FileCreate.HasValue)
-                {
-                    toReturn.Add(new FileAction()
-                    {
-                        CreateFile = true,
-                        Path = GetRelativePath(entry.Path, syncFrom),
-                        USN = entry.USN,
-                    });
-                }
-                if (entry.RenameNewName.HasValue)
-                {
-                    toReturn.Add(new FileAction()
-                    {
-                        RenameFrom = toList.FirstOrDefault(f=>f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN).Path,
-                        Path = GetRelativePath(entry.Path, syncFrom),
-                        USN = entry.USN,
-                    });
-                }
-                else if (entry.FileDelete.HasValue)
-                {
-                    toReturn.RemoveAll(f => f.Path == entry.Path);
-                    toReturn.Add(new FileAction() { Path = entry.Path, USN = entry.USN, DeleteFile = true});
-                }
-                else
-                {
-                    toReturn.RemoveAll(f => f.Path == entry.Path && !f.DeleteFile && string.IsNullOrWhiteSpace(f.RenameFrom));
-                    toReturn.Add(new FileAction() {Path = entry.Path, USN = entry.USN});
-                }
-            }
-
-            return toReturn;
-        }
-
-        private string GetRelativePath(string path, SyncMountpoint syncFrom)
-        {
-
-            var relativePath = Path.Get(path).MakeRelativeTo(syncFrom.Mountpoint.Reference.MountPoint.TrimEnd('\\'));
-
-            //var finalPath = Path.Get(syncFrom.Path).Add(relativePath);
-            var finalPath = Path.Get(syncFrom.Path, relativePath.ToString());
-            return finalPath.FullPath;
-        }
 
         private void TransferItem(USNJournalSyncLog syncLog)
         {
