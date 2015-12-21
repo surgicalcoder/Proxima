@@ -83,7 +83,6 @@ namespace ThreeOneThree.Proxima.Agent
                             {
                                 continue;
                             }
-                            //if (actualPath.StartsWith($"{journal.MountPoint.TrimEnd('\\')}" ))
 
                             var dbEntry = new USNJournalMongoEntry();
                             dbEntry.Path = actualPath;
@@ -98,10 +97,10 @@ namespace ThreeOneThree.Proxima.Agent
                             dbEntry.TimeStamp = entry.TimeStamp;
                             dbEntry.UniversalPath = GetRemotePath(actualPath);
                             dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f => 
-                            f.Action.SourcePath == actualPath &&
-                                (f.ActionStartDate.HasValue && entry.TimeStamp > f.ActionStartDate) || 
-                                (f.ActionFinishDate.HasValue  && entry.TimeStamp < f.ActionFinishDate ) ) 
-                            > 0;
+                                f.Action.SourcePath == actualPath &&
+                                    (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) && 
+                                    (f.ActionFinishDate.HasValue  && entry.TimeStamp <= f.ActionFinishDate ) ) 
+                                > 0;
 
                             PopulateFlags(dbEntry, entry);
                             entries.Add(dbEntry);
@@ -126,7 +125,7 @@ namespace ThreeOneThree.Proxima.Agent
 
         private string GetRemotePath(string actualPath)
         {
-            return "\\" + Environment.MachineName + "\\" + actualPath.Replace(":", "$");
+            return "\\\\" + Environment.MachineName + "\\" + actualPath.Replace(":", "$");
         }
 
         private void PopulateFlags(USNJournalMongoEntry dbEntry, Win32Api.UsnEntry entry)

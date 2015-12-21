@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 //using System.IO;
 using System.Linq;
 using Fluent.IO;
@@ -71,63 +72,70 @@ namespace ThreeOneThree.Proxima.Agent
         private void TransferItem(USNJournalSyncLog syncLog)
         {
             // return;
-            if (syncLog.Action.DeleteFile)
+            try
             {
-                logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.Path}");
-
-                if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
+                if (syncLog.Action.DeleteFile)
                 {
-                    syncLog.ActionStartDate = DateTime.Now;
-                    Singleton.Instance.Repository.Update(syncLog);
-                    System.IO.File.Delete(syncLog.Action.Path);
-                    syncLog.ActionFinishDate = DateTime.Now;
-                    syncLog.Successfull = true;
-                    Singleton.Instance.Repository.Update(syncLog);
-                }
+                    logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.Path}");
+
+                    if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
+                    {
+                        syncLog.ActionStartDate = DateTime.Now;
+                        Singleton.Instance.Repository.Update(syncLog);
+                        File.Delete(syncLog.Action.Path);
+                        syncLog.ActionFinishDate = DateTime.Now;
+                        syncLog.Successfull = true;
+                        Singleton.Instance.Repository.Update(syncLog);
+                    }
                 
-            }
-            else if (syncLog.Action.CreateFile)
-            {
-                logger.Info($"[{syncLog.Id}] Create {syncLog.Action.Path}");
-                if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
-                {
-                    syncLog.ActionStartDate = DateTime.Now;
-                    Singleton.Instance.Repository.Update(syncLog);
-                    System.IO.File.Create(syncLog.Action.Path);
-                    syncLog.ActionFinishDate = DateTime.Now;
-                    syncLog.Successfull = true;
-                    Singleton.Instance.Repository.Update(syncLog);
-
                 }
-            }
-            else if (!string.IsNullOrWhiteSpace(syncLog.Action.RenameFrom))
-            {
-                logger.Info($"[{syncLog.Id}] Moving {syncLog.Action.RenameFrom} to {syncLog.Action.Path}");
+                //else if (syncLog.Action.CreateFile)
+                //{
+                //    logger.Info($"[{syncLog.Id}] Create {syncLog.Action.Path}");
+                //    if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
+                //    {
+                //        syncLog.ActionStartDate = DateTime.Now;
+                //        Singleton.Instance.Repository.Update(syncLog);
+                //        File.Create(syncLog.Action.Path);
+                //        syncLog.ActionFinishDate = DateTime.Now;
+                //        syncLog.Successfull = true;
+                //        Singleton.Instance.Repository.Update(syncLog);
 
-                if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
+                //    }
+                //}
+                else if (!string.IsNullOrWhiteSpace(syncLog.Action.RenameFrom))
                 {
-                    syncLog.ActionStartDate = DateTime.Now;
-                    Singleton.Instance.Repository.Update(syncLog);
-                    System.IO.File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
-                    syncLog.ActionFinishDate = DateTime.Now;
-                    syncLog.Successfull = true;
-                    Singleton.Instance.Repository.Update(syncLog);
+                    logger.Info($"[{syncLog.Id}] Moving {syncLog.Action.RenameFrom} to {syncLog.Action.Path}");
+
+                    if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
+                    {
+                        syncLog.ActionStartDate = DateTime.Now;
+                        Singleton.Instance.Repository.Update(syncLog);
+                        File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
+                        syncLog.ActionFinishDate = DateTime.Now;
+                        syncLog.Successfull = true;
+                        Singleton.Instance.Repository.Update(syncLog);
                     
+                    }
+                }
+                else
+                {
+                    logger.Info($"[{syncLog.Id}] Copying {syncLog.Action.Path}");
+
+                    if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
+                    {
+                        syncLog.ActionStartDate = DateTime.Now;
+                        Singleton.Instance.Repository.Update(syncLog);
+                        File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path, true);
+                        syncLog.ActionFinishDate = DateTime.Now;
+                        syncLog.Successfull = true;
+                        Singleton.Instance.Repository.Update(syncLog);
+                    }
                 }
             }
-            else
+            catch (Exception e)
             {
-                logger.Info($"[{syncLog.Id}] Copying {syncLog.Action.Path}");
-
-                if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
-                {
-                    syncLog.ActionStartDate = DateTime.Now;
-                    Singleton.Instance.Repository.Update(syncLog);
-                    System.IO.File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path);
-                    syncLog.ActionFinishDate = DateTime.Now;
-                    syncLog.Successfull = true;
-                    Singleton.Instance.Repository.Update(syncLog);
-                }
+                logger.Error(e, "Error on item " + syncLog.Id);
             }
         }
     }
