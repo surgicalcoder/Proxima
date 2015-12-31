@@ -89,6 +89,21 @@ namespace ThreeOneThree.Proxima.Agent
 
             var fileActions = toReturn.Select(e => e.Path).Distinct().Select(f => toReturn.FirstOrDefault(a => a.Path == f)).ToList();
 
+            foreach (var source in fileActions.Where(f=> !String.IsNullOrWhiteSpace(f.RenameFrom)).ToList())
+            {
+                if (fileActions.Any(f => f.SourcePath == source.RenameFrom))
+                {
+                    fileActions.RemoveAll(f => f.SourcePath == source.RenameFrom);
+                    fileActions.Remove(source);
+                    fileActions.Add(new FileAction()
+                    {
+                        Path = source.Path,
+                        SourcePath = source.SourcePath,
+                        USN = source.USN,
+                    });
+                }
+            }
+
 
             return fileActions;
         }

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using NLog;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
 using ThreeOneThree.Proxima.Core.Entities;
@@ -15,6 +16,8 @@ namespace ThreeOneThree.Proxima.Agent
     [DisallowConcurrentExecution]
     public class USNJournalMonitor : IJob
     {
+
+        private static Logger logger = LogManager.GetCurrentClassLogger();
 
         uint reasonMask = 
             Win32Api.USN_REASON_DATA_OVERWRITE |
@@ -56,9 +59,7 @@ namespace ThreeOneThree.Proxima.Agent
                     List<Win32Api.UsnEntry> usnEntries;
 
                     NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
-
-                    //repo.Many<USNJournalSyncFrom>(f=>f.SourceMachine == Environment.MachineName.ToLowerInvariant())
-
+                    
                     var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
 
                     if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
@@ -94,7 +95,6 @@ namespace ThreeOneThree.Proxima.Agent
                             dbEntry.RecordLength = entry.RecordLength;
                             dbEntry.USN = entry.USN;
                             dbEntry.Mountpoint = sourceMount; 
-//                            dbEntry.MachineName = Environment.MachineName.ToLower();
                             dbEntry.TimeStamp = entry.TimeStamp;
                             dbEntry.UniversalPath = GetRemotePath(actualPath);
                             dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f => 
@@ -109,7 +109,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                         construct.CurrentJournalData = newUsnState;
                         sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
-                       // Console.WriteLine(sourceMount.CurrentUSNLocation);
+                       logger.Debug("USN Details: " + sourceMount.ToString());
                         repo.Update(sourceMount);
 
                     }

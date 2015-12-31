@@ -18,7 +18,6 @@ namespace ThreeOneThree.Proxima.Agent
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-
         public void Execute(IJobExecutionContext context)
         {
             if (Singleton.Instance.DestinationMountpoints == null || Singleton.Instance.DestinationMountpoints.Count == 0)
@@ -111,7 +110,16 @@ namespace ThreeOneThree.Proxima.Agent
                     {
                         syncLog.ActionStartDate = DateTime.Now;
                         Singleton.Instance.Repository.Update(syncLog);
-                        File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
+
+                        if (File.Exists(syncLog.Action.RenameFrom))
+                        {
+                            File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
+                        }
+                        else
+                        {
+                            File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path, true);
+                        }
+
                         syncLog.ActionFinishDate = DateTime.Now;
                         syncLog.Successfull = true;
                         Singleton.Instance.Repository.Update(syncLog);

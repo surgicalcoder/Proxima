@@ -138,7 +138,25 @@ namespace ThreeOneThree.Proxmia.Tests
             Assert.AreEqual(false, result[0].CreateFile);
         }
 
+        [Test]
+        public void CreateThenRenameFile()
+        {
+            List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>
+            {
+                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10000, FRN = 1001, PFRN = 1002, FileCreate = true},
+                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10001, FRN = 1001, PFRN = 1002},
+                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10011, FRN = 1001, PFRN = 1002, RenameOldName = true},
+                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file2.txt", USN = 10013, FRN = 1001, PFRN = 1002, RenameNewName = true},
 
-        
+            };
+
+
+            var result = RollupService.PerformRollup(entries, mountPoint);
+
+            Assert.AreEqual(1, result.Count);
+
+        }
+
+
     }
 }

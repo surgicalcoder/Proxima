@@ -64,6 +64,11 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public string MountPoint { get; set; }
 
         public long CurrentUSNLocation { get; set; }
+
+        public override string ToString()
+        {
+            return $"MountPoint: {MountPoint}, CurrentUSNLocation: {CurrentUSNLocation}";
+        }
     }
 
     public class SyncMountpoint : MongoEntity
