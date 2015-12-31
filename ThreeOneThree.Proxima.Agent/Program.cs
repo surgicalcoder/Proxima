@@ -65,27 +65,31 @@ namespace ThreeOneThree.Proxima.Agent
                 host.Run();
                 return;
             }
-
+            ConsoleString usageHints = new ConsoleString();
             try
             {
+                
                 if (args[0].ToLowerInvariant() == "source")
                 {
                     Args.InvokeAction<ConsoleCommands.Source>(args.Skip(1).ToArray());
+                    
+                    usageHints = ArgUsage.GenerateUsageFromTemplate<ConsoleCommands.Source>();
                 }
                 else if (args[0].ToLowerInvariant() == "dest")
                 {
                     Args.InvokeAction<ConsoleCommands.Dest>(args.Skip(1).ToArray());
+                    usageHints = ArgUsage.GenerateUsageFromTemplate<ConsoleCommands.Dest>();
                 }
                 else
                 {
                     Console.WriteLine("Missing type of config - source or dest");
                     return;
                 }
-               // Args.InvokeAction<AdminCommands>(args);
             }
             catch (ArgException ex)
             {
                 Console.WriteLine(ex.Message);
+                Console.WriteLine(usageHints);
             }
 
 

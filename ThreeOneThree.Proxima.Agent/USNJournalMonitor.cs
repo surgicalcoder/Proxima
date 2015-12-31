@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Quartz;
@@ -118,8 +119,10 @@ namespace ThreeOneThree.Proxima.Agent
                     }
                 }
 
-
-                repo.Add<USNJournalMongoEntry>(entries);
+                if (entries.Any())
+                {
+                    repo.Add<USNJournalMongoEntry>(entries);
+                }
             }
         }
 

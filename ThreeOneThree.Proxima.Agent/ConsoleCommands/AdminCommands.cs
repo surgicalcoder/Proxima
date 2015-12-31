@@ -38,6 +38,17 @@ namespace ThreeOneThree.Proxima.Agent.ConsoleCommands
 
             Console.WriteLine("Success");
         }
+
+        [ArgActionMethod]
+        public void Delete(string Id)
+        {
+            using (Repository repo = new Repository())
+            {
+                repo.Delete(repo.ById<MonitoredMountpoint>(Id));
+            }
+
+            Console.WriteLine("Success");
+        }
     }
 
 
