@@ -86,6 +86,8 @@ namespace ThreeOneThree.Proxima.Agent
                                 continue;
                             }
 
+                            //var syncEntries = repo.Many<USNJournalSyncLog>(f=>f.Action.p)
+
                             var dbEntry = new USNJournalMongoEntry();
                             dbEntry.Path = actualPath;
                             dbEntry.File = entry.IsFile;
@@ -98,7 +100,7 @@ namespace ThreeOneThree.Proxima.Agent
                             dbEntry.TimeStamp = entry.TimeStamp;
                             dbEntry.UniversalPath = GetRemotePath(actualPath);
                             dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f => 
-                                f.Action.SourcePath == actualPath &&
+                                f.Action.Path == actualPath &&
                                     (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) && 
                                     (f.ActionFinishDate.HasValue  && entry.TimeStamp <= f.ActionFinishDate ) ) 
                                 > 0;
