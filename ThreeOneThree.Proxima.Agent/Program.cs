@@ -31,11 +31,15 @@ namespace ThreeOneThree.Proxima.Agent
                     repo.Add(currentServer);
                     Singleton.Instance.Servers.Add(currentServer);
                 }
-
+                logger.Debug(string.Format("Current server = {0} ({1})", currentServer.MachineName, currentServer.Id));
                 Singleton.Instance.CurrentServer = currentServer;
                 Singleton.Instance.DestinationMountpoints = repo.Many<SyncMountpoint>(f => f.DestinationServer.ReferenceId == currentServer.Id).ToList();
                 Singleton.Instance.SourceMountpoints = repo.Many<MonitoredMountpoint>(f => f.Server.ReferenceId == currentServer.Id).ToList();
+
             }
+
+            Singleton.Instance.SourceMountpoints.ForEach(f=>logger.Debug("Source mount point: " + f));
+
 
             if (args.Length == 0 || TopshelfParameters.Contains(args[0].ToLowerInvariant()))
             {

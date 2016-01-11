@@ -45,85 +45,96 @@ namespace ThreeOneThree.Proxima.Agent
         {
             if (Singleton.Instance.SourceMountpoints == null || Singleton.Instance.SourceMountpoints.Count == 0)
             {
+                logger.Debug("No source mount points found");
                 return;
             }
 
+            //logger.Debug("USNJournalMonitor Execution");
+
             using (Repository repo = new Repository())
             {
-                List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>();
-
-                foreach (var sourceMount in Singleton.Instance.SourceMountpoints)
+                try
                 {
-                    var construct = new DriveConstruct(sourceMount.MountPoint);
-                    Win32Api.USN_JOURNAL_DATA newUsnState;
-                    List<Win32Api.UsnEntry> usnEntries;
+                    List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>();
 
-                    NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
+                    foreach (var sourceMount in Singleton.Instance.SourceMountpoints)
+                    {
+                        var construct = new DriveConstruct(sourceMount.MountPoint);
+                        Win32Api.USN_JOURNAL_DATA newUsnState;
+                        List<Win32Api.UsnEntry> usnEntries;
+                        logger.Debug("Using volume = " + construct.Volume.Substring(0, construct.Volume.Length - 1));
+                        NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
                     
-                    var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
+                        var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
 
-                    if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
-                    {
-
-                        foreach (var entry in usnEntries)
+                        if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                         {
-                            string rawPath;
-                            string actualPath;
 
-                            var usnRtnCode = journal.GetPathFromFileReference(entry.ParentFileReferenceNumber, out rawPath);
-
-                            if (usnRtnCode == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS && 0 != String.Compare(rawPath, "Unavailable", StringComparison.OrdinalIgnoreCase))
+                            foreach (var entry in usnEntries)
                             {
-                                actualPath = $"{journal.MountPoint.TrimEnd('\\')}{rawPath.TrimEnd('\\')}\\{entry.Name}";
+                                string rawPath;
+                                string actualPath;
+
+                                var usnRtnCode = journal.GetPathFromFileReference(entry.ParentFileReferenceNumber, out rawPath);
+
+                                if (usnRtnCode == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS && 0 != String.Compare(rawPath, "Unavailable", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    actualPath = $"{journal.MountPoint.TrimEnd('\\')}{rawPath.TrimEnd('\\')}\\{entry.Name}";
+                                }
+                                else
+                                {
+                                    actualPath = "#UNKNOWN#";
+                                }
+
+                                if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant()) || actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+                                {
+                                    continue;
+                                }
+
+                                //var syncEntries = repo.Many<USNJournalSyncLog>(f=>f.Action.p)
+
+                                var dbEntry = new USNJournalMongoEntry();
+                                dbEntry.Path = actualPath;
+                                dbEntry.File = entry.IsFile;
+                                dbEntry.Directory = entry.IsFolder;
+                                dbEntry.FRN = entry.FileReferenceNumber;
+                                dbEntry.PFRN = entry.ParentFileReferenceNumber;
+                                dbEntry.RecordLength = entry.RecordLength;
+                                dbEntry.USN = entry.USN;
+                                dbEntry.Mountpoint = sourceMount; 
+                                dbEntry.TimeStamp = entry.TimeStamp;
+                                dbEntry.UniversalPath = GetRemotePath(actualPath);
+                                dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f => 
+                                                                                     f.Action.Path == actualPath &&
+                                                                                     (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) && 
+                                                                                     (f.ActionFinishDate.HasValue  && entry.TimeStamp <= f.ActionFinishDate ) ) 
+                                                       > 0;
+
+                                PopulateFlags(dbEntry, entry);
+                                entries.Add(dbEntry);
                             }
-                            else
-                            {
-                                actualPath = "#UNKNOWN#";
-                            }
 
-                            if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant()) || actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
-                            {
-                                continue;
-                            }
+                            construct.CurrentJournalData = newUsnState;
+                            sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
+                            logger.Debug("USN Details: " + sourceMount.ToString());
+                            repo.Update(sourceMount);
 
-                            //var syncEntries = repo.Many<USNJournalSyncLog>(f=>f.Action.p)
-
-                            var dbEntry = new USNJournalMongoEntry();
-                            dbEntry.Path = actualPath;
-                            dbEntry.File = entry.IsFile;
-                            dbEntry.Directory = entry.IsFolder;
-                            dbEntry.FRN = entry.FileReferenceNumber;
-                            dbEntry.PFRN = entry.ParentFileReferenceNumber;
-                            dbEntry.RecordLength = entry.RecordLength;
-                            dbEntry.USN = entry.USN;
-                            dbEntry.Mountpoint = sourceMount; 
-                            dbEntry.TimeStamp = entry.TimeStamp;
-                            dbEntry.UniversalPath = GetRemotePath(actualPath);
-                            dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f => 
-                                f.Action.Path == actualPath &&
-                                    (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) && 
-                                    (f.ActionFinishDate.HasValue  && entry.TimeStamp <= f.ActionFinishDate ) ) 
-                                > 0;
-
-                            PopulateFlags(dbEntry, entry);
-                            entries.Add(dbEntry);
                         }
-
-                        construct.CurrentJournalData = newUsnState;
-                        sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
-                       logger.Debug("USN Details: " + sourceMount.ToString());
-                        repo.Update(sourceMount);
-
+                        else
+                        {
+                            logger.Error("Error on Monitor - " + rtn.ToString());
+                            throw new UsnJournalException(rtn);
+                        }
                     }
-                    else
+
+                    if (entries.Any())
                     {
-                        throw new UsnJournalException(rtn);
+                        repo.Add<USNJournalMongoEntry>(entries);
                     }
                 }
-
-                if (entries.Any())
+                catch (Exception e)
                 {
-                    repo.Add<USNJournalMongoEntry>(entries);
+                    logger.Error(e, "Error in USNJournalMonitor");
                 }
             }
         }

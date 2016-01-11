@@ -85,8 +85,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Entities\FileAction.cs" />
-    <Compile Include="Entities\MountpointToMonitor.cs" />
-    <Compile Include="Entities\USNJournalSyncFrom.cs" />
     <Compile Include="Entities\USNJournalSyncLog.cs" />
     <Compile Include="MongoRef.cs" />
     <Compile Include="Helper.cs" />
