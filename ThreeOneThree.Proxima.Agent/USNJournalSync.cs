@@ -81,7 +81,15 @@ namespace ThreeOneThree.Proxima.Agent
                     {
                         syncLog.ActionStartDate = DateTime.Now;
                         Singleton.Instance.Repository.Update(syncLog);
-                        File.Delete(syncLog.Action.Path);
+                        if (syncLog.Action.IsDirectory)
+                        {
+                            Directory.Delete(syncLog.Action.Path, true);
+                        }
+                        else
+                        {
+                            File.Delete(syncLog.Action.Path);
+                        }
+                        
                         syncLog.ActionFinishDate = DateTime.Now;
                         syncLog.Successfull = true;
                         Singleton.Instance.Repository.Update(syncLog);
@@ -111,14 +119,30 @@ namespace ThreeOneThree.Proxima.Agent
                         syncLog.ActionStartDate = DateTime.Now;
                         Singleton.Instance.Repository.Update(syncLog);
 
-                        if (File.Exists(syncLog.Action.RenameFrom))
+                        if (syncLog.Action.IsDirectory)
                         {
-                            File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
+                            if (Directory.Exists(syncLog.Action.RenameFrom))
+                            {
+                                Directory.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
+                            }
+                            else
+                            {
+                                Fluent.IO.Path.Get(syncLog.Entry.Reference.UniversalPath).Copy(syncLog.Action.Path, Overwrite.Always);
+                            }
                         }
                         else
                         {
-                            File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path, true);
+                            if (File.Exists(syncLog.Action.RenameFrom))
+                            {
+                                File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
+                            }
+                            else
+                            {
+                                File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path, true);
+                            }
                         }
+
+                        
 
                         syncLog.ActionFinishDate = DateTime.Now;
                         syncLog.Successfull = true;
@@ -134,7 +158,14 @@ namespace ThreeOneThree.Proxima.Agent
                     {
                         syncLog.ActionStartDate = DateTime.Now;
                         Singleton.Instance.Repository.Update(syncLog);
-                        File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path, true);
+                        if (syncLog.Action.IsDirectory)
+                        {
+                            Fluent.IO.Path.Get(syncLog.Entry.Reference.UniversalPath).Copy(syncLog.Action.Path, Overwrite.Always);
+                        }
+                        else
+                        {
+                            File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path, true);
+                        }
                         syncLog.ActionFinishDate = DateTime.Now;
                         syncLog.Successfull = true;
                         Singleton.Instance.Repository.Update(syncLog);

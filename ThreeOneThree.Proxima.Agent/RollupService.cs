@@ -29,6 +29,7 @@ namespace ThreeOneThree.Proxima.Agent
                     {
                         toReturn.Add(new FileAction()
                         {
+                            IsDirectory = entry.Directory.HasValue,
                             SourcePath = entry.Path,
                             CreateFile = true,
                             Path = relativePath,
@@ -38,6 +39,7 @@ namespace ThreeOneThree.Proxima.Agent
                     else if (entry.RenameNewName.HasValue)
                     {
                         var item = new FileAction();
+                        item.IsDirectory = entry.Directory.HasValue;
                         if (rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN) == null)
                         {
                             item.RenameFrom = Singleton.Instance.Repository.One<USNJournalMongoEntry>(f => f.FRN == entry.FRN && f.PFRN == entry.PFRN && f.RenameOldName.HasValue).Path;
@@ -59,12 +61,13 @@ namespace ThreeOneThree.Proxima.Agent
                             Path = relativePath,
                             USN = entry.USN,
                             DeleteFile = true,
-                            SourcePath = entry.Path
-                        });
+                            SourcePath = entry.Path,
+                            IsDirectory = entry.Directory.HasValue
+                    });
                     }
                     else
                     {
-                        toReturn.Add(new FileAction() { Path= relativePath, USN = entry.USN, SourcePath = entry.Path});
+                        toReturn.Add(new FileAction() { Path= relativePath, USN = entry.USN, SourcePath = entry.Path, IsDirectory = entry.Directory.HasValue});
                     }
                 }
                 catch (Exception e)
@@ -100,7 +103,8 @@ namespace ThreeOneThree.Proxima.Agent
                         Path = source.Path,
                         SourcePath = source.SourcePath,
                         USN = source.USN,
-                    });
+                        IsDirectory = source.IsDirectory
+                });
                 }
             }
 
