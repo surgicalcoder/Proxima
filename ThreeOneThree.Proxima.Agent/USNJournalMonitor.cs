@@ -62,7 +62,7 @@ namespace ThreeOneThree.Proxima.Agent
                         var construct = new DriveConstruct(sourceMount.MountPoint);
                         Win32Api.USN_JOURNAL_DATA newUsnState;
                         List<Win32Api.UsnEntry> usnEntries;
-                        logger.Debug("Using volume = " + construct.Volume.Substring(0, construct.Volume.Length - 1));
+                        //logger.Debug("Using volume = " + construct.Volume.Substring(0, construct.Volume.Length - 1));
                         NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
                     
                         var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
@@ -116,7 +116,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                             construct.CurrentJournalData = newUsnState;
                             sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
-                            logger.Debug("USN Details: " + sourceMount.ToString());
+                            //logger.Debug("USN Details: " + sourceMount.ToString());
                             repo.Update(sourceMount);
 
                         }
