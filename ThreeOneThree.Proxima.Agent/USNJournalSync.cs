@@ -71,12 +71,12 @@ namespace ThreeOneThree.Proxima.Agent
 
         private void TransferItem(USNJournalSyncLog syncLog)
         {
-            
-            // return;
             try
             {
                 syncLog.ActionStartDate = DateTime.Now;
                 Singleton.Instance.Repository.Update(syncLog);
+
+                bool successfull = false;
 
                 if (syncLog.Action.DeleteFile)
                 {
@@ -93,10 +93,8 @@ namespace ThreeOneThree.Proxima.Agent
                         {
                             File.Delete(syncLog.Action.Path);
                         }
-                        
-                        syncLog.ActionFinishDate = DateTime.Now;
-                        syncLog.Successfull = true;
-                        Singleton.Instance.Repository.Update(syncLog);
+
+                        successfull = true;
                     }
                 
                 }
@@ -106,9 +104,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                     if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                     {
-                        syncLog.ActionStartDate = DateTime.Now;
-                        Singleton.Instance.Repository.Update(syncLog);
-
+                        
                         if (syncLog.Action.IsDirectory)
                         {
                             if (Directory.Exists(syncLog.Action.RenameFrom))
@@ -131,13 +127,8 @@ namespace ThreeOneThree.Proxima.Agent
                                 File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path, true);
                             }
                         }
+                        successfull = true;
 
-                        
-
-                        syncLog.ActionFinishDate = DateTime.Now;
-                        syncLog.Successfull = true;
-                        Singleton.Instance.Repository.Update(syncLog);
-                    
                     }
                 }
                 else
@@ -146,8 +137,6 @@ namespace ThreeOneThree.Proxima.Agent
 
                     if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                     {
-                        syncLog.ActionStartDate = DateTime.Now;
-                        Singleton.Instance.Repository.Update(syncLog);
                         if (syncLog.Action.IsDirectory)
                         {
                             Fluent.IO.Path.Get(syncLog.Entry.Reference.UniversalPath).Copy(syncLog.Action.Path, Overwrite.Always);
@@ -156,19 +145,19 @@ namespace ThreeOneThree.Proxima.Agent
                         {
                             File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path, true);
                         }
-                        syncLog.ActionFinishDate = DateTime.Now;
-                        syncLog.Successfull = true;
-                        Singleton.Instance.Repository.Update(syncLog);
+                        successfull = true;
                     }
                 }
+
+
+                syncLog.ActionFinishDate = DateTime.Now;
+                syncLog.Successfull = successfull;
+                Singleton.Instance.Repository.Update(syncLog);
+
             }
             catch (Exception e)
             {
                 logger.Error(e, "Error on item " + syncLog.Id);
-                
-                syncLog.ActionFinishDate = DateTime.Now;
-                syncLog.Successfull = false;
-                Singleton.Instance.Repository.Update(syncLog);
             }
         }
     }
