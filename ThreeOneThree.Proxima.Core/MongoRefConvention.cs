@@ -1,3 +1,4 @@
+using System;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
@@ -23,11 +24,18 @@ namespace ThreeOneThree.Proxima.Core
     {
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, MongoRef<T> value)
         {
+            
             context.Writer.WriteString(value.ReferenceId);
         }
 
         public override MongoRef<T> Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
+            if (context.Reader.State == BsonReaderState.Name)
+            {
+                context.Reader.ReadStartDocument();
+                return new MongoRef<T>(context.Reader.ReadString());
+            }
+            
             if (context.Reader.CurrentBsonType == BsonType.Document)
             {
                 context.Reader.ReadStartDocument();
