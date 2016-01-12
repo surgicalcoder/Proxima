@@ -12,7 +12,6 @@ using ThreeOneThree.Proxima.Core.Entities;
 
 namespace ThreeOneThree.Proxima.Agent
 {
-    [PersistJobDataAfterExecution]
     [DisallowConcurrentExecution]
     public class USNJournalSync : IJob
     {
@@ -23,6 +22,7 @@ namespace ThreeOneThree.Proxima.Agent
             logger.Debug("USNJournalSync Execution");
             if (Singleton.Instance.DestinationMountpoints == null || Singleton.Instance.DestinationMountpoints.Count == 0)
             {
+                logger.Debug("No destination points");
                 return;
             }
 
@@ -35,7 +35,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                     syncFrom.Mountpoint.Reference = repo.ById<MonitoredMountpoint>(syncFrom.Mountpoint.ReferenceId);
 
-                    var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync && e.USN > syncFrom.LastUSN && e.Mountpoint.ReferenceId == syncFrom.Mountpoint.ReferenceId && e.Path != "#UNKNOWN#").ToList();
+                    var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync && e.USN > syncFrom.LastUSN && e.Mountpoint == syncFrom.Mountpoint && e.Path != "#UNKNOWN#").ToList();
 
                     var changedFiles = RollupService.PerformRollup(rawEntries, syncFrom).ToList();
 
@@ -71,17 +71,20 @@ namespace ThreeOneThree.Proxima.Agent
 
         private void TransferItem(USNJournalSyncLog syncLog)
         {
+            
             // return;
             try
             {
+                syncLog.ActionStartDate = DateTime.Now;
+                Singleton.Instance.Repository.Update(syncLog);
+
                 if (syncLog.Action.DeleteFile)
                 {
                     logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.Path}");
 
                     if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                     {
-                        syncLog.ActionStartDate = DateTime.Now;
-                        Singleton.Instance.Repository.Update(syncLog);
+                        
                         if (syncLog.Action.IsDirectory)
                         {
                             Directory.Delete(syncLog.Action.Path, true);
@@ -97,20 +100,6 @@ namespace ThreeOneThree.Proxima.Agent
                     }
                 
                 }
-                //else if (syncLog.Action.CreateFile)
-                //{
-                //    logger.Info($"[{syncLog.Id}] Create {syncLog.Action.Path}");
-                //    if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
-                //    {
-                //        syncLog.ActionStartDate = DateTime.Now;
-                //        Singleton.Instance.Repository.Update(syncLog);
-                //        File.Create(syncLog.Action.Path);
-                //        syncLog.ActionFinishDate = DateTime.Now;
-                //        syncLog.Successfull = true;
-                //        Singleton.Instance.Repository.Update(syncLog);
-
-                //    }
-                //}
                 else if (!string.IsNullOrWhiteSpace(syncLog.Action.RenameFrom))
                 {
                     logger.Info($"[{syncLog.Id}] Moving {syncLog.Action.RenameFrom} to {syncLog.Action.Path}");
@@ -176,6 +165,10 @@ namespace ThreeOneThree.Proxima.Agent
             catch (Exception e)
             {
                 logger.Error(e, "Error on item " + syncLog.Id);
+                
+                syncLog.ActionFinishDate = DateTime.Now;
+                syncLog.Successfull = false;
+                Singleton.Instance.Repository.Update(syncLog);
             }
         }
     }

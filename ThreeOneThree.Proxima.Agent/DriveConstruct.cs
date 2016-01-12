@@ -21,13 +21,8 @@ namespace ThreeOneThree.Proxima.Agent
             {
                 ManagementObjectSearcher searcher = new ManagementObjectSearcher("root\\CIMV2", "SELECT * FROM Win32_Volume");
 
-
-                Volume = searcher.Get().Cast<ManagementObject>().FirstOrDefault(f=> f["Caption"].ToString() == driveLetter )["DeviceID"].ToString();
-
-                //foreach (var queryObj in searcher.Get())
-                //{
-                //    Volume = queryObj["DeviceID"].ToString();
-                //}
+                logger.Debug("Using " + driveLetter);
+                Volume = searcher.Get().Cast<ManagementObject>().FirstOrDefault(f=> string.Compare(f["Caption"].ToString(), driveLetter, StringComparison.InvariantCultureIgnoreCase) == 0 )["DeviceID"].ToString();
             }
             catch (Exception e)
             {
