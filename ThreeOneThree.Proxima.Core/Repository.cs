@@ -67,10 +67,11 @@ namespace ThreeOneThree.Proxima.Core
 
         private void RegisterConventions()
         {
-            var pack = new ConventionPack { new IgnoreIfNullConvention(true), new MongoRefConvention(), new IgnoreExtraElementsConvention(true)};
+            var pack = new ConventionPack { new IgnoreIfNullConvention(true), /*new MongoRefConvention(),*/ new IgnoreExtraElementsConvention(true)};
 
             ConventionRegistry.Register("Custom Conventions", pack, t => true);
 
+            BsonSerializer.RegisterGenericSerializerDefinition(typeof(MongoRef<>), typeof(MongoRefSerializer<>));
 
             if (!BsonClassMap.IsClassMapRegistered(typeof(MongoEntity)))
             {

@@ -12,7 +12,7 @@ using ThreeOneThree.Proxima.Core.Entities;
 
 namespace ThreeOneThree.Proxima.Agent
 {
-    [PersistJobDataAfterExecution]
+   // [PersistJobDataAfterExecution]
     [DisallowConcurrentExecution]
     public class USNJournalMonitor : IJob
     {
@@ -43,13 +43,14 @@ namespace ThreeOneThree.Proxima.Agent
 
         public void Execute(IJobExecutionContext context)
         {
+            //logger.Debug("USNJournalMonitor Execution");
             if (Singleton.Instance.SourceMountpoints == null || Singleton.Instance.SourceMountpoints.Count == 0)
             {
                 logger.Debug("No source mount points found");
                 return;
             }
 
-            //logger.Debug("USNJournalMonitor Execution");
+            
 
             using (Repository repo = new Repository())
             {

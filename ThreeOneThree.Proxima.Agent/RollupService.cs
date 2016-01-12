@@ -29,7 +29,7 @@ namespace ThreeOneThree.Proxima.Agent
                     {
                         toReturn.Add(new FileAction()
                         {
-                            IsDirectory = entry.Directory.HasValue,
+                            IsDirectory = entry.Directory.HasValue && entry.Directory.Value,
                             SourcePath = entry.Path,
                             CreateFile = true,
                             Path = relativePath,
@@ -39,7 +39,7 @@ namespace ThreeOneThree.Proxima.Agent
                     else if (entry.RenameNewName.HasValue)
                     {
                         var item = new FileAction();
-                        item.IsDirectory = entry.Directory.HasValue;
+                        item.IsDirectory = entry.Directory.HasValue && entry.Directory.Value;
                         if (rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN) == null)
                         {
                             item.RenameFrom = Singleton.Instance.Repository.One<USNJournalMongoEntry>(f => f.FRN == entry.FRN && f.PFRN == entry.PFRN && f.RenameOldName.HasValue).Path;
@@ -62,12 +62,12 @@ namespace ThreeOneThree.Proxima.Agent
                             USN = entry.USN,
                             DeleteFile = true,
                             SourcePath = entry.Path,
-                            IsDirectory = entry.Directory.HasValue
+                            IsDirectory = entry.Directory.HasValue && entry.Directory.Value
                     });
                     }
                     else
                     {
-                        toReturn.Add(new FileAction() { Path= relativePath, USN = entry.USN, SourcePath = entry.Path, IsDirectory = entry.Directory.HasValue});
+                        toReturn.Add(new FileAction() { Path= relativePath, USN = entry.USN, SourcePath = entry.Path, IsDirectory = entry.Directory.HasValue && entry.Directory.Value});
                     }
                 }
                 catch (Exception e)

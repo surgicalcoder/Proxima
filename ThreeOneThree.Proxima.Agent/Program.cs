@@ -38,7 +38,7 @@ namespace ThreeOneThree.Proxima.Agent
 
             }
 
-            Singleton.Instance.SourceMountpoints.ForEach(f=>logger.Debug("Source mount point: " + f));
+            Singleton.Instance.SourceMountpoints.ForEach(f=>logger.Debug("Source: " + f.ToString()));
 
 
             if (args.Length == 0 || TopshelfParameters.Contains(args[0].ToLowerInvariant()))
@@ -52,8 +52,10 @@ namespace ThreeOneThree.Proxima.Agent
                         service.WhenStarted((a, control) => a.Start(control));
                         service.WhenStopped((a, control) => a.Stop(control));
 
-                        service.ScheduleQuartzJob(b => b.WithJob(() => JobBuilder.Create<USNJournalSync>().Build()).AddTrigger(() => TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(5).RepeatForever()).Build()));
-                        service.ScheduleQuartzJob(b => b.WithJob(() => JobBuilder.Create<USNJournalMonitor>().Build()).AddTrigger(() => TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(5).RepeatForever()).Build()));
+                        service.ScheduleQuartzJob(b => b.WithJob(() => JobBuilder.Create<USNJournalSync>().Build())
+                          .AddTrigger(() => TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(5).RepeatForever()).Build()));
+                        service.ScheduleQuartzJob(b => b.WithJob(() => JobBuilder.Create<USNJournalMonitor>().Build())
+                            .AddTrigger(() => TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(5).RepeatForever()).Build()));
 
                     });
                     x.RunAsLocalSystem();
