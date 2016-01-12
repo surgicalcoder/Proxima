@@ -1,3 +1,5 @@
+using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson.Serialization.Serializers;
@@ -26,7 +28,15 @@ namespace ThreeOneThree.Proxima.Core
 
         public override MongoRef<T> Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
-            return new MongoRef<T>(context.Reader.ReadString());
+            if (context.Reader.CurrentBsonType == BsonType.Document)
+            {
+                context.Reader.ReadStartDocument();
+                return new MongoRef<T>(context.Reader.ReadString());
+            }
+            else
+            {
+                return new MongoRef<T>(context.Reader.ReadString());
+            }
         }
     }
 }

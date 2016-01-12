@@ -7,7 +7,7 @@ using ThreeOneThree.Proxima.Core.Entities;
 
 namespace ThreeOneThree.Proxima.Core
 {
-    public class MongoRef<T> where T : MongoEntity
+    public class MongoRef<T> : IEquatable<MongoRef<T>> where T : MongoEntity
     {
         public MongoRef(string refId)
         {
@@ -65,6 +65,51 @@ namespace ThreeOneThree.Proxima.Core
                 toCheck = toCheck.BaseType;
             }
             return false;
+        }
+
+        public bool Equals(MongoRef<T> other)
+        {
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+            return EqualityComparer<T>.Default.Equals(Reference, other.Reference);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+            if (obj.GetType() != this.GetType())
+            {
+                return false;
+            }
+            return Equals((MongoRef<T>) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return EqualityComparer<T>.Default.GetHashCode(Reference);
+        }
+
+        public static bool operator ==(MongoRef<T> left, MongoRef<T> right)
+        {
+            return Equals(left, right);
+        }
+
+        public static bool operator !=(MongoRef<T> left, MongoRef<T> right)
+        {
+            return !Equals(left, right);
         }
 
         public MongoRef()

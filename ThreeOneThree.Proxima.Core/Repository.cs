@@ -71,7 +71,17 @@ namespace ThreeOneThree.Proxima.Core
 
             ConventionRegistry.Register("Custom Conventions", pack, t => true);
 
-            BsonSerializer.RegisterGenericSerializerDefinition(typeof(MongoRef<>), typeof(MongoRefSerializer<>));
+
+            try
+            {
+                BsonSerializer.RegisterGenericSerializerDefinition(typeof (MongoRef<>), typeof (MongoRefSerializer<>));
+            }
+            catch (BsonSerializationException bsex) when (bsex.Message == "There is already a serializer mapping registered for type MongoRef<T>.")
+            {
+                
+            }
+                
+            
 
             if (!BsonClassMap.IsClassMapRegistered(typeof(MongoEntity)))
             {

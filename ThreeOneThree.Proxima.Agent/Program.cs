@@ -33,8 +33,8 @@ namespace ThreeOneThree.Proxima.Agent
                 }
                 logger.Debug(string.Format("Current server = {0} ({1})", currentServer.MachineName, currentServer.Id));
                 Singleton.Instance.CurrentServer = currentServer;
-                Singleton.Instance.DestinationMountpoints = repo.Many<SyncMountpoint>(f => f.DestinationServer.ReferenceId == currentServer.Id).ToList();
-                Singleton.Instance.SourceMountpoints = repo.Many<MonitoredMountpoint>(f => f.Server.ReferenceId == currentServer.Id).ToList();
+                Singleton.Instance.DestinationMountpoints = repo.Many<SyncMountpoint>(f => f.DestinationServer == currentServer.Id).ToList();
+                Singleton.Instance.SourceMountpoints = repo.Many<MonitoredMountpoint>(f => f.Server == currentServer.Id).ToList();
 
             }
 
