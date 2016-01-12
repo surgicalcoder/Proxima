@@ -84,7 +84,7 @@ namespace ThreeOneThree.Proxima.Agent
                                 }
                                 else
                                 {
-                                    actualPath = "#UNKNOWN#";
+                                    continue;
                                 }
 
                                 if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant()) || actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
