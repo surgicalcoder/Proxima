@@ -24,8 +24,8 @@ namespace ThreeOneThree.Proxima.Core
     {
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, MongoRef<T> value)
         {
-            
-            context.Writer.WriteString(value.ReferenceId);
+
+            context.Writer.WriteObjectId(new ObjectId(value.ReferenceId));
         }
 
         public override MongoRef<T> Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
@@ -33,17 +33,18 @@ namespace ThreeOneThree.Proxima.Core
             if (context.Reader.State == BsonReaderState.Name)
             {
                 context.Reader.ReadStartDocument();
-                return new MongoRef<T>(context.Reader.ReadString());
+
+                return new MongoRef<T>(context.Reader.ReadObjectId().ToString());
             }
-            
+
             if (context.Reader.CurrentBsonType == BsonType.Document)
             {
                 context.Reader.ReadStartDocument();
-                return new MongoRef<T>(context.Reader.ReadString());
+                return new MongoRef<T>(context.Reader.ReadObjectId().ToString());
             }
             else
             {
-                return new MongoRef<T>(context.Reader.ReadString());
+                return new MongoRef<T>(context.Reader.ReadObjectId().ToString());
             }
         }
     }
