@@ -44,6 +44,8 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public bool? ReparsePointChange { get; set; }
         public bool? StreamChange { get; set; }
         public bool? Close { get; set; }
+
+        public bool? SystemFile{ get; set; }
     }
 
 

@@ -35,7 +35,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                     syncFrom.Mountpoint.Reference = repo.ById<MonitoredMountpoint>(syncFrom.Mountpoint.ReferenceId);
 
-                    var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync && e.USN > syncFrom.LastUSN && e.Mountpoint == syncFrom.Mountpoint && e.Path != "#UNKNOWN#").ToList();
+                    var rawEntries = repo.Many<USNJournalMongoEntry>(e => !e.CausedBySync && !e.SystemFile.HasValue && e.USN > syncFrom.LastUSN && e.Mountpoint == syncFrom.Mountpoint && e.Path != "#UNKNOWN#").ToList();
 
                     var changedFiles = RollupService.PerformRollup(rawEntries, syncFrom).ToList();
 

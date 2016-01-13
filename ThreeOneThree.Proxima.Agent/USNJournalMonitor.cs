@@ -87,7 +87,7 @@ namespace ThreeOneThree.Proxima.Agent
                                     continue;
                                 }
 
-                                if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant()) || actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+                                if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant()) ) // || actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
                                 {
                                     continue;
                                 }
@@ -95,6 +95,15 @@ namespace ThreeOneThree.Proxima.Agent
                                 //var syncEntries = repo.Many<USNJournalSyncLog>(f=>f.Action.p)
 
                                 var dbEntry = new USNJournalMongoEntry();
+                                PopulateFlags(dbEntry, entry);
+
+                                //if (!dbEntry.Close.HasValue || !dbEntry.RenameOldName.HasValue || !dbEntry.RenameNewName.HasValue)
+                                //{
+
+                                //    // We are only interested in renames and closes.
+                                //    continue;
+                                //}
+
                                 dbEntry.Path = actualPath;
                                 dbEntry.File = entry.IsFile;
                                 dbEntry.Directory = entry.IsFolder;
@@ -110,8 +119,12 @@ namespace ThreeOneThree.Proxima.Agent
                                                                                      (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) && 
                                                                                      (f.ActionFinishDate.HasValue  && entry.TimeStamp <= f.ActionFinishDate ) ) 
                                                        > 0;
+                                if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+                                {
+                                    dbEntry.SystemFile = true;
+                                }
 
-                                PopulateFlags(dbEntry, entry);
+
                                 entries.Add(dbEntry);
                             }
 
