@@ -8,7 +8,7 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public MongoRef<Server> DestinationMachine { get; set; }
 
 
-        public MongoRef<USNJournalMongoEntry> Entry { get; set; }
+        public MongoRef<RawUSNEntry> Entry { get; set; }
 
         public DateTime Enqueued { get; set; }
 

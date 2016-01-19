@@ -108,9 +108,9 @@ namespace ThreeOneThree.Proxima.Core
                 return;
             }
             
-            if (!mongoDatabase.GetCollection<USNJournalMongoEntry>(GetCollectionNameForType<USNJournalMongoEntry>("")).Indexes.List().Any())
+            if (!mongoDatabase.GetCollection<RawUSNEntry>(GetCollectionNameForType<RawUSNEntry>("")).Indexes.List().Any())
             {
-                mongoDatabase.GetCollection<USNJournalMongoEntry>(GetCollectionNameForType<USNJournalMongoEntry>("")).Indexes.CreateOne(Builders<USNJournalMongoEntry>.IndexKeys.Ascending(e => e.Mountpoint).Ascending(e => e.USN));
+                mongoDatabase.GetCollection<RawUSNEntry>(GetCollectionNameForType<RawUSNEntry>("")).Indexes.CreateOne(Builders<RawUSNEntry>.IndexKeys.Ascending(e => e.Mountpoint).Ascending(e => e.USN));
             }
 
             InitRun = true;

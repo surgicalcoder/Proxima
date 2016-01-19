@@ -56,7 +56,7 @@ namespace ThreeOneThree.Proxima.Agent
             {
                 try
                 {
-                    List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>();
+                    List<RawUSNEntry> entries = new List<RawUSNEntry>();
 
                     foreach (var sourceMount in Singleton.Instance.SourceMountpoints)
                     {
@@ -94,7 +94,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                                 //var syncEntries = repo.Many<USNJournalSyncLog>(f=>f.Action.p)
 
-                                var dbEntry = new USNJournalMongoEntry();
+                                var dbEntry = new RawUSNEntry();
                                 PopulateFlags(dbEntry, entry);
 
                                 //if (!dbEntry.Close.HasValue || !dbEntry.RenameOldName.HasValue || !dbEntry.RenameNewName.HasValue)
@@ -145,7 +145,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                     if (entries.Any())
                     {
-                        repo.Add<USNJournalMongoEntry>(entries);
+                        repo.Add<RawUSNEntry>(entries);
                     }
                 }
                 catch (Exception e)
@@ -160,7 +160,7 @@ namespace ThreeOneThree.Proxima.Agent
             return "\\\\" + Environment.MachineName + "\\" + actualPath.Replace(":", "$");
         }
 
-        private void PopulateFlags(USNJournalMongoEntry dbEntry, Win32Api.UsnEntry entry)
+        private void PopulateFlags(RawUSNEntry dbEntry, Win32Api.UsnEntry entry)
         {
             uint value = entry.Reason & Win32Api.USN_REASON_DATA_OVERWRITE;
             if (0 != value)

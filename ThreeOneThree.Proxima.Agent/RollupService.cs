@@ -13,7 +13,7 @@ namespace ThreeOneThree.Proxima.Agent
     public static class RollupService
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
-        public static List<FileAction> PerformRollup(List<USNJournalMongoEntry> rawEntries, SyncMountpoint syncFrom)
+        public static List<FileAction> PerformRollup(List<RawUSNEntry> rawEntries, SyncMountpoint syncFrom)
         {
             var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value)).OrderBy(f => f.Path).ThenBy(f=>f.FileCreate)/*.Distinct(new JournalPathEqualityComparer())*/;
             
@@ -42,7 +42,7 @@ namespace ThreeOneThree.Proxima.Agent
                         item.IsDirectory = entry.Directory.HasValue && entry.Directory.Value;
                         if (rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN) == null)
                         {
-                            item.RenameFrom = Singleton.Instance.Repository.One<USNJournalMongoEntry>(f => f.FRN == entry.FRN && f.PFRN == entry.PFRN && f.RenameOldName.HasValue).Path;
+                            item.RenameFrom = Singleton.Instance.Repository.One<RawUSNEntry>(f => f.FRN == entry.FRN && f.PFRN == entry.PFRN && f.RenameOldName.HasValue).Path;
                         }
                         else
                         {

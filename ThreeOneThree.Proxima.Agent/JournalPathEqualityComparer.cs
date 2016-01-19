@@ -5,14 +5,14 @@ using ThreeOneThree.Proxima.Core.Entities;
 
 namespace ThreeOneThree.Proxima.Agent
 {
-    public class JournalPathEqualityComparer : IEqualityComparer<USNJournalMongoEntry>
+    public class JournalPathEqualityComparer : IEqualityComparer<RawUSNEntry>
     {
-        public bool Equals(USNJournalMongoEntry x, USNJournalMongoEntry y)
+        public bool Equals(RawUSNEntry x, RawUSNEntry y)
         {
             return x.Path.Equals(y.Path);
         }
 
-        public int GetHashCode(USNJournalMongoEntry obj)
+        public int GetHashCode(RawUSNEntry obj)
         {
             return obj.Path.GetHashCode();
         }

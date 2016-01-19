@@ -2,7 +2,7 @@ using System;
 
 namespace ThreeOneThree.Proxima.Core.Entities
 {
-    public class USNJournalMongoEntry : MongoEntity
+    public class RawUSNEntry : MongoEntity
     {
         //public string MachineName { get; set; }
         public MongoRef<MonitoredMountpoint> Mountpoint { get; set; }
@@ -46,43 +46,5 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public bool? Close { get; set; }
 
         public bool? SystemFile{ get; set; }
-    }
-
-
-    public class Server : MongoEntity
-    {
-        public Server(string machineName)
-        {
-            MachineName = machineName.ToLowerInvariant();
-        }
-
-        public string MachineName { get; set; }
-    }
-
-    public class MonitoredMountpoint : MongoEntity
-    {
-        public MongoRef<Server> Server { get; set; }
-
-        public string MountPoint { get; set; }
-
-        public string Volume { get; set; }
-
-        public long CurrentUSNLocation { get; set; }
-
-        public override string ToString()
-        {
-            return $"MountPoint: {MountPoint}, CurrentUSNLocation: {CurrentUSNLocation}";
-        }
-    }
-
-    public class SyncMountpoint : MongoEntity
-    {
-        public MongoRef<MonitoredMountpoint> Mountpoint { get; set; }
-
-        public MongoRef<Server> DestinationServer { get; set; }
-
-        public string Path { get; set; }
-
-        public long LastUSN { get; set; }
     }
 }

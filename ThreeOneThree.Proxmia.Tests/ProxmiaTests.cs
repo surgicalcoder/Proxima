@@ -28,9 +28,9 @@ namespace ThreeOneThree.Proxmia.Tests
         [Test]
         public void PathMappingWorks()
         {
-            List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>
+            List<RawUSNEntry> entries = new List<RawUSNEntry>
             {
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12345, FRN = 1001, PFRN = 1002},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12345, FRN = 1001, PFRN = 1002},
 
             };
 
@@ -43,12 +43,12 @@ namespace ThreeOneThree.Proxmia.Tests
         [Test]
         public void OnlyCopyOneFileForMultipleChangesToSameFile()
         {
-            List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>
+            List<RawUSNEntry> entries = new List<RawUSNEntry>
             {
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12345, FRN = 1001, PFRN = 1002},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12346, FRN = 1001, PFRN = 1002},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12347, FRN = 1001, PFRN = 1002},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12348, FRN = 1001, PFRN = 1002},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12345, FRN = 1001, PFRN = 1002},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12346, FRN = 1001, PFRN = 1002},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12347, FRN = 1001, PFRN = 1002},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12348, FRN = 1001, PFRN = 1002},
 
             };
             
@@ -62,9 +62,9 @@ namespace ThreeOneThree.Proxmia.Tests
         [Test]
         public void RenameOldFileGeneratesNoEntries()
         {
-            List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>
+            List<RawUSNEntry> entries = new List<RawUSNEntry>
             {
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12345, FRN = 1001, PFRN = 1002, RenameOldName = true},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12345, FRN = 1001, PFRN = 1002, RenameOldName = true},
             };
 
 
@@ -76,10 +76,10 @@ namespace ThreeOneThree.Proxmia.Tests
         [Test]
         public void RenameFileTest()
         {
-            List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>
+            List<RawUSNEntry> entries = new List<RawUSNEntry>
             {
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12345, FRN = 1001, PFRN = 1002, RenameOldName = true},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file2.txt", USN = 12301, FRN = 1001, PFRN = 1002, RenameNewName= true},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12345, FRN = 1001, PFRN = 1002, RenameOldName = true},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file2.txt", USN = 12301, FRN = 1001, PFRN = 1002, RenameNewName= true},
             };
 
 
@@ -91,10 +91,10 @@ namespace ThreeOneThree.Proxmia.Tests
         [Test]
         public void CreateThenDeleteFileGeneratesNoEntries()
         {
-            List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>
+            List<RawUSNEntry> entries = new List<RawUSNEntry>
             {
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10000, FRN = 1001, PFRN = 1002, FileCreate = true},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 11000, FRN = 1001, PFRN = 1002, FileDelete = true},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10000, FRN = 1001, PFRN = 1002, FileCreate = true},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 11000, FRN = 1001, PFRN = 1002, FileDelete = true},
             };
 
 
@@ -106,12 +106,12 @@ namespace ThreeOneThree.Proxmia.Tests
         [Test]
         public void CreateThenDeleteThenModifyFile()
         {
-            List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>
+            List<RawUSNEntry> entries = new List<RawUSNEntry>
             {
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10000, FRN = 1001, PFRN = 1002, FileCreate = true},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 11000, FRN = 1001, PFRN = 1002},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12000, FRN = 1001, PFRN = 1002, FileDelete = true},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 13000, FRN = 1001, PFRN = 1002},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10000, FRN = 1001, PFRN = 1002, FileCreate = true},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 11000, FRN = 1001, PFRN = 1002},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12000, FRN = 1001, PFRN = 1002, FileDelete = true},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 13000, FRN = 1001, PFRN = 1002},
             };
 
 
@@ -125,10 +125,10 @@ namespace ThreeOneThree.Proxmia.Tests
         [Test]
         public void FavourCopyVSCreate()
         {
-            List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>
+            List<RawUSNEntry> entries = new List<RawUSNEntry>
             {
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10000, FRN = 1001, PFRN = 1002, FileCreate = true},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 13000, FRN = 1001, PFRN = 1002},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10000, FRN = 1001, PFRN = 1002, FileCreate = true},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 13000, FRN = 1001, PFRN = 1002},
             };
 
 
@@ -141,12 +141,12 @@ namespace ThreeOneThree.Proxmia.Tests
         [Test]
         public void CreateThenRenameFile()
         {
-            List<USNJournalMongoEntry> entries = new List<USNJournalMongoEntry>
+            List<RawUSNEntry> entries = new List<RawUSNEntry>
             {
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10000, FRN = 1001, PFRN = 1002, FileCreate = true},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10001, FRN = 1001, PFRN = 1002},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10011, FRN = 1001, PFRN = 1002, RenameOldName = true},
-                new USNJournalMongoEntry {Close = true, Path = sourcePath + "file2.txt", USN = 10013, FRN = 1001, PFRN = 1002, RenameNewName = true},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10000, FRN = 1001, PFRN = 1002, FileCreate = true},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10001, FRN = 1001, PFRN = 1002},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 10011, FRN = 1001, PFRN = 1002, RenameOldName = true},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file2.txt", USN = 10013, FRN = 1001, PFRN = 1002, RenameNewName = true},
 
             };
 
