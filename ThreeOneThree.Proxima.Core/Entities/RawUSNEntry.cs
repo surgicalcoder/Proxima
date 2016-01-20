@@ -4,10 +4,11 @@ namespace ThreeOneThree.Proxima.Core.Entities
 {
     public class RawUSNEntry : MongoEntity
     {
-        //public string MachineName { get; set; }
         public MongoRef<MonitoredMountpoint> Mountpoint { get; set; }
         public string Path { get; set; }
-        public string UniversalPath { get; set; }
+
+        public string RelativePath { get; set; }
+
         public bool? File { get; set; }
         public bool? Directory { get; set; }
 
