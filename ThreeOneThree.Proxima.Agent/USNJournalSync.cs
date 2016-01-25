@@ -36,8 +36,7 @@ namespace ThreeOneThree.Proxima.Agent
                     syncFrom.Mountpoint.Reference = repo.ById<MonitoredMountpoint>(syncFrom.Mountpoint.ReferenceId);
 
                     var rawEntries = repo.Many<RawUSNEntry>(e => !e.CausedBySync && !e.SystemFile.HasValue && e.USN > syncFrom.LastUSN && e.Mountpoint == syncFrom.Mountpoint && e.Path != "#UNKNOWN#").ToList();
-
-                    var changedFiles = RollupService.PerformRollup(rawEntries, syncFrom).ToList();
+                    var changedFiles = RollupService.PerformRollup(rawEntries, syncFrom.Mountpoint.Reference).ToList();
 
                     if (rawEntries.Count == 0)
                     {
@@ -52,7 +51,7 @@ namespace ThreeOneThree.Proxima.Agent
                         log.Enqueued = DateTime.Now;
                         log.DestinationMachine = Singleton.Instance.CurrentServer;
                         log.SourceMachine = syncFrom.Mountpoint.Reference.Server;
-                        log.Entry = rawEntries.FirstOrDefault(f=>f.USN == fileAction.USN);
+                        log.Entry = fileAction.USN;
                         log.Action = fileAction;
 
                         repo.Add(log);
@@ -78,13 +77,13 @@ namespace ThreeOneThree.Proxima.Agent
 
                 bool successfull = false;
 
-                if (syncLog.Action.DeleteFile)
+                if (syncLog.Action.GetType() == typeof (DeleteAction))
                 {
                     logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.RelativePath}");
 
                     if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                     {
-                        
+
                         if (syncLog.Action.IsDirectory)
                         {
                             Directory.Delete(syncLog.Action.RelativePath, true);
@@ -96,11 +95,14 @@ namespace ThreeOneThree.Proxima.Agent
 
                         successfull = true;
                     }
-                
                 }
-                else if (!string.IsNullOrWhiteSpace(syncLog.Action.RenameFrom))
+
+                //else if (!string.IsNullOrWhiteSpace(syncLog.Action.RenameFrom))
+                else if (syncLog.Action.GetType() == typeof(RenameAction))
                 {
-                    logger.Info($"[{syncLog.Id}] Moving {syncLog.Action.RenameFrom} to {syncLog.Action.RelativePath}");
+                    var renameAction = syncLog.Action as RenameAction;
+
+                    logger.Info($"[{syncLog.Id}] Moving {renameAction.RenameFrom} to {renameAction.RenameTo}");
 
                     if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                     {

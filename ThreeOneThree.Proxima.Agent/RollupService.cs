@@ -23,27 +23,7 @@ namespace ThreeOneThree.Proxima.Agent
             {
                 try
                 {
-                    //var relativePath = GetRelativePath(entry.RelativePath, syncFrom);
-
-                  /*  if (entry.FileCreate.HasValue)
-                    {
-                        toReturn.Add(new UpdateAction()
-                        {
-                            IsDirectory = entry.Directory.HasValue && entry.Directory.Value,
-                            RawPath = entry.Path,
-                            RelativePath = entry.RelativePath,
-                            USN = entry
-                        });
-                        //toReturn.Add(new FileAction()
-                        //{
-                        //    IsDirectory = entry.Directory.HasValue && entry.Directory.Value,
-                        //    RawPath = entry.RelativePath,
-                        //    CreateFile = true,
-                        //    RelativePath = relativePath,
-                        //    USN = entry.USN,
-                        //});
-                    }
-                    else */if (entry.RenameNewName.HasValue)
+                    if (entry.RenameNewName.HasValue)
                     {
                         var item = new RenameAction();
                         item.IsDirectory = entry.Directory.HasValue && entry.Directory.Value;
@@ -83,7 +63,8 @@ namespace ThreeOneThree.Proxima.Agent
                             IsDirectory = entry.Directory.HasValue && entry.Directory.Value,
                             RawPath = entry.Path,
                             RelativePath = entry.RelativePath,
-                            USN = entry
+                            USN = entry,
+                            Mountpoint = syncFrom
                         });
                     }
                 }
@@ -119,8 +100,8 @@ namespace ThreeOneThree.Proxima.Agent
                         RelativePath = source.RelativePath,
                         RawPath = source.RawPath,
                         USN = source.USN,
-                        IsDirectory = source.IsDirectory
-
+                        IsDirectory = source.IsDirectory,
+                        Mountpoint = syncFrom
                     });
                 }
             }
