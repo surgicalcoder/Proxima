@@ -1,6 +1,6 @@
 namespace ThreeOneThree.Proxima.Core.Entities
 {
-    public abstract class FileAction
+    public abstract class FileAction : MongoEntity
     {
         public MongoRef<MonitoredMountpoint> Mountpoint { get; set; }
 

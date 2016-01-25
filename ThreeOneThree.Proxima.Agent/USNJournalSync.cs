@@ -9,6 +9,7 @@ using NLog;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
 using ThreeOneThree.Proxima.Core.Entities;
+using Path = Fluent.IO.Path;
 
 namespace ThreeOneThree.Proxima.Agent
 {
@@ -22,7 +23,7 @@ namespace ThreeOneThree.Proxima.Agent
             logger.Debug("USNJournalSync Execution");
             if (Singleton.Instance.DestinationMountpoints == null || Singleton.Instance.DestinationMountpoints.Count == 0)
             {
-                logger.Debug("No destination points");
+                logger.Info("No destination points");
                 return;
             }
 
@@ -56,7 +57,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                         repo.Add(log);
 
-                        Singleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log));
+                        Singleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log, syncFrom));
 
                     }
                     syncFrom.LastUSN = lastUsn;
@@ -68,7 +69,7 @@ namespace ThreeOneThree.Proxima.Agent
 
 
 
-        private void TransferItem(USNJournalSyncLog syncLog)
+        private void TransferItem(USNJournalSyncLog syncLog, SyncMountpoint syncFrom)
         {
             try
             {
@@ -81,75 +82,65 @@ namespace ThreeOneThree.Proxima.Agent
                 {
                     logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.RelativePath}");
 
-                    if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
+                    if (syncLog.Action.IsDirectory)
                     {
-
-                        if (syncLog.Action.IsDirectory)
-                        {
-                            Directory.Delete(syncLog.Action.RelativePath, true);
-                        }
-                        else
-                        {
-                            File.Delete(syncLog.Action.RelativePath);
-                        }
-
-                        successfull = true;
+                        Path.Get(syncFrom.Path, syncLog.Action.RelativePath).Delete(true);
                     }
+                    else
+                    {
+                        Path.Get(syncFrom.Path, syncLog.Action.RelativePath).Delete(true);
+                    }
+
+                    successfull = true;
+                    
                 }
 
-                //else if (!string.IsNullOrWhiteSpace(syncLog.Action.RenameFrom))
                 else if (syncLog.Action.GetType() == typeof(RenameAction))
                 {
                     var renameAction = syncLog.Action as RenameAction;
 
                     logger.Info($"[{syncLog.Id}] Moving {renameAction.RenameFrom} to {renameAction.RenameTo}");
 
-                    if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
-                    {
-                        
-                        if (syncLog.Action.IsDirectory)
-                        {
-                            if (Directory.Exists(syncLog.Action.RenameFrom))
-                            {
-                                Directory.Move(syncLog.Action.RenameFrom, syncLog.Action.RelativePath);
-                            }
-                            else
-                            {
-                                
-                                Fluent.IO.Path.Get(syncLog.Entry.Reference.UniversalPath).Copy(syncLog.Action.RelativePath, Overwrite.Always);
-                            }
-                        }
-                        else
-                        {
-                            if (File.Exists(syncLog.Action.RenameFrom))
-                            {
-                                File.Move(syncLog.Action.RenameFrom, syncLog.Action.RelativePath);
-                            }
-                            else
-                            {
-                                File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.RelativePath, true);
-                            }
-                        }
-                        successfull = true;
+                    Path.Get(syncFrom.Path, renameAction.RenameFrom).Move(Path.Get(syncFrom.Path, renameAction.RenameTo).FullPath);
+                    //if (syncLog.Action.IsDirectory)
+                    //{
 
-                    }
+                    //}
+                    //else
+                    //{
+                    //    if (File.Exists(syncLog.Action.RenameFrom))
+                    //    {
+                    //        File.Move(syncLog.Action.RenameFrom, syncLog.Action.RelativePath);
+                    //    }
+                    //    else
+                    //    {
+                    //        File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.RelativePath, true);
+                    //    }
+                    //}
+                    successfull = true;
+
+                    
                 }
                 else
                 {
                     logger.Info($"[{syncLog.Id}] Copying {syncLog.Action.RelativePath}");
 
-                    if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
-                    {
-                        if (syncLog.Action.IsDirectory)
-                        {
-                            Fluent.IO.Path.Get(syncLog.Entry.Reference.UniversalPath).Copy(syncLog.Action.RelativePath, Overwrite.Always);
-                        }
-                        else
-                        {
-                            File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.RelativePath, true);
-                        }
-                        successfull = true;
-                    }
+                    var copyAction = syncLog.Action as UpdateAction;
+
+                    Path.Get(syncFrom.Mountpoint.Reference.PublicPath, syncLog.Entry.Reference.RelativePath).Copy(Path.Get(syncFrom.Path, syncLog.Entry.Reference.RelativePath), Overwrite.Always, true);
+
+                    //if (syncLog.Action.IsDirectory)
+                    //{
+                    //    Path.Get(syncFrom.Mountpoint.Reference.PublicPath, syncLog.Entry.Reference.RelativePath).Copy(Path.Get(syncFrom.Path, syncLog.Entry.Reference.RelativePath), Overwrite.Always, true);
+                    //    //Path.Get(syncLog.Entry.Reference. .UniversalPath).Copy(syncLog.Action.RelativePath, Overwrite.Always);
+                    //}
+                    //else
+                    //{
+
+                    //    File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.RelativePath, true);
+                    //}
+                    successfull = true;
+                    
                 }
 
 

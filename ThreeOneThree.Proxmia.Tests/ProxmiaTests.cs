@@ -31,14 +31,14 @@ namespace ThreeOneThree.Proxmia.Tests
         {
             List<RawUSNEntry> entries = new List<RawUSNEntry>
             {
-                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", USN = 12345, FRN = 1001, PFRN = 1002},
+                new RawUSNEntry {Close = true, Path = sourcePath + "file1.txt", RelativePath = "file1.txt", USN = 12345, FRN = 1001, PFRN = 1002},
 
             };
 
 
             var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
-            
-            Assert.AreEqual( destinationPath + "file1.txt", result[0].RelativePath);
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual("file1.txt", result[0].RelativePath);
         }
 
         [Test]
@@ -119,7 +119,6 @@ namespace ThreeOneThree.Proxmia.Tests
             var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
 
             Assert.AreEqual(1, result.Count);
-            Assert.AreEqual(0, result.OfType<UpdateAction>().Count());
             Assert.AreEqual(0, result.OfType<DeleteAction>().Count());
         }
 
@@ -136,7 +135,6 @@ namespace ThreeOneThree.Proxmia.Tests
             var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
 
             Assert.AreEqual(1, result.Count);
-            Assert.AreEqual(0, result.OfType<UpdateAction>().Count());
         }
 
         [Test]

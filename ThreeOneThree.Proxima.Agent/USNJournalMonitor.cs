@@ -143,7 +143,8 @@ namespace ThreeOneThree.Proxima.Agent
                         if (entries.Any())
                         {
                             repo.Add<RawUSNEntry>(entries);
-                            RollupService.PerformRollup(entries, sourceMount);
+                            var performRollup = RollupService.PerformRollup(entries, sourceMount);
+                            repo.Add<FileAction>(performRollup);
                         }
 
                     }
