@@ -10,7 +10,7 @@ namespace ThreeOneThree.Proxima.Core.Entities
 
         public string Path { get; set; }
 
-        public string LastSyncID { get; set; }
-        //public long LastUSN { get; set; }
+        //public string LastSyncID { get; set; }
+        public long LastUSN { get; set; }
     }
 }
