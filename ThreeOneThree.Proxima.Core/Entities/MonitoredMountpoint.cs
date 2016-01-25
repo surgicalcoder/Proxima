@@ -6,6 +6,8 @@ namespace ThreeOneThree.Proxima.Core.Entities
 
         public string MountPoint { get; set; }
 
+        public string PublicPath { get; set; }
+
         public string Volume { get; set; }
 
         public long CurrentUSNLocation { get; set; }

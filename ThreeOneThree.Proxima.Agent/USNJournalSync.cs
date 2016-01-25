@@ -113,6 +113,7 @@ namespace ThreeOneThree.Proxima.Agent
                             }
                             else
                             {
+                                
                                 Fluent.IO.Path.Get(syncLog.Entry.Reference.UniversalPath).Copy(syncLog.Action.Path, Overwrite.Always);
                             }
                         }

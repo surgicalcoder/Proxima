@@ -9,6 +9,7 @@ using NLog;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
 using ThreeOneThree.Proxima.Core.Entities;
+using Path = Fluent.IO.Path;
 
 namespace ThreeOneThree.Proxima.Agent
 {
@@ -63,9 +64,10 @@ namespace ThreeOneThree.Proxima.Agent
                         var construct = new DriveConstruct(sourceMount.MountPoint);
                         Win32Api.USN_JOURNAL_DATA newUsnState;
                         List<Win32Api.UsnEntry> usnEntries;
-                        //logger.Debug("Using volume = " + construct.Volume.Substring(0, construct.Volume.Length - 1));
                         NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
-                    
+
+                        var drivePath = Fluent.IO.Path.Get(construct.DriveLetter);
+
                         var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
 
                         if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
@@ -92,17 +94,8 @@ namespace ThreeOneThree.Proxima.Agent
                                     continue;
                                 }
 
-                                //var syncEntries = repo.Many<USNJournalSyncLog>(f=>f.Action.p)
-
                                 var dbEntry = new RawUSNEntry();
                                 PopulateFlags(dbEntry, entry);
-
-                                //if (!dbEntry.Close.HasValue || !dbEntry.RenameOldName.HasValue || !dbEntry.RenameNewName.HasValue)
-                                //{
-
-                                //    // We are only interested in renames and closes.
-                                //    continue;
-                                //}
 
                                 dbEntry.Path = actualPath;
                                 dbEntry.File = entry.IsFile;
@@ -113,7 +106,9 @@ namespace ThreeOneThree.Proxima.Agent
                                 dbEntry.USN = entry.USN;
                                 dbEntry.Mountpoint = sourceMount; 
                                 dbEntry.TimeStamp = entry.TimeStamp;
-                                dbEntry.UniversalPath = GetRemotePath(actualPath);
+
+                                dbEntry.RelativePath = Path.Get(actualPath).MakeRelativeTo(drivePath.FullPath.TrimEnd('\\')).ToString();
+                                
                                 dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f => 
                                                                                      f.Action.Path == actualPath &&
                                                                                      (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) && 
@@ -131,7 +126,7 @@ namespace ThreeOneThree.Proxima.Agent
                             construct.CurrentJournalData = newUsnState;
                             sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
                             sourceMount.Volume = construct.Volume;
-                            //logger.Debug("USN Details: " + sourceMount.ToString());
+                            
                             Console.WriteLine("USN: " + sourceMount.CurrentUSNLocation + " /  "+ sourceMount.Volume);
                             repo.Update(sourceMount);
 
