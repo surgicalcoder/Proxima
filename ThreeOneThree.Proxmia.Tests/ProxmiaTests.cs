@@ -13,6 +13,7 @@ namespace ThreeOneThree.Proxmia.Tests
     [TestFixture]
     public class ProxmiaTests
     {
+        
         SyncMountpoint mountPoint = new SyncMountpoint() {
             Mountpoint = new MonitoredMountpoint()
         {
@@ -35,9 +36,9 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
             
-            Assert.AreEqual( destinationPath + "file1.txt", result[0].Path);
+            Assert.AreEqual( destinationPath + "file1.txt", result[0].RelativePath);
         }
 
         [Test]
@@ -53,7 +54,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
             
 
-            var result = RollupService.PerformRollup(entries, mountPoint);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
             
             Assert.AreEqual(result.Count, 1);
         }
@@ -68,7 +69,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
 
             Assert.AreEqual(result.Count, 0);
         }
@@ -83,7 +84,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
 
             Assert.AreEqual(result.Count, 1);
         }
@@ -98,7 +99,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
 
             Assert.AreEqual(0, result.Count);
         }
@@ -115,11 +116,11 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
 
             Assert.AreEqual(1, result.Count);
-            Assert.AreEqual(false, result[0].CreateFile);
-            Assert.AreEqual(false, result[0].DeleteFile);
+            Assert.AreEqual(0, result.OfType<UpdateAction>().Count());
+            Assert.AreEqual(0, result.OfType<DeleteAction>().Count());
         }
 
         [Test]
@@ -132,10 +133,10 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
 
             Assert.AreEqual(1, result.Count);
-            Assert.AreEqual(false, result[0].CreateFile);
+            Assert.AreEqual(0, result.OfType<UpdateAction>().Count());
         }
 
         [Test]
@@ -151,7 +152,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
 
             Assert.AreEqual(1, result.Count);
 

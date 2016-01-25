@@ -22,12 +22,12 @@ namespace ThreeOneThree.Proxima.Agent
     {
         public bool Equals(FileAction x, FileAction y)
         {
-            return string.Equals(x.Path, y.Path);
+            return string.Equals(x.RelativePath, y.RelativePath);
         }
 
         public int GetHashCode(FileAction obj)
         {
-            return obj.Path.GetHashCode();
+            return obj.RelativePath.GetHashCode();
         }
     }
 }

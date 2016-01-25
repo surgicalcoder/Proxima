@@ -80,18 +80,18 @@ namespace ThreeOneThree.Proxima.Agent
 
                 if (syncLog.Action.DeleteFile)
                 {
-                    logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.Path}");
+                    logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.RelativePath}");
 
                     if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                     {
                         
                         if (syncLog.Action.IsDirectory)
                         {
-                            Directory.Delete(syncLog.Action.Path, true);
+                            Directory.Delete(syncLog.Action.RelativePath, true);
                         }
                         else
                         {
-                            File.Delete(syncLog.Action.Path);
+                            File.Delete(syncLog.Action.RelativePath);
                         }
 
                         successfull = true;
@@ -100,7 +100,7 @@ namespace ThreeOneThree.Proxima.Agent
                 }
                 else if (!string.IsNullOrWhiteSpace(syncLog.Action.RenameFrom))
                 {
-                    logger.Info($"[{syncLog.Id}] Moving {syncLog.Action.RenameFrom} to {syncLog.Action.Path}");
+                    logger.Info($"[{syncLog.Id}] Moving {syncLog.Action.RenameFrom} to {syncLog.Action.RelativePath}");
 
                     if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                     {
@@ -109,23 +109,23 @@ namespace ThreeOneThree.Proxima.Agent
                         {
                             if (Directory.Exists(syncLog.Action.RenameFrom))
                             {
-                                Directory.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
+                                Directory.Move(syncLog.Action.RenameFrom, syncLog.Action.RelativePath);
                             }
                             else
                             {
                                 
-                                Fluent.IO.Path.Get(syncLog.Entry.Reference.UniversalPath).Copy(syncLog.Action.Path, Overwrite.Always);
+                                Fluent.IO.Path.Get(syncLog.Entry.Reference.UniversalPath).Copy(syncLog.Action.RelativePath, Overwrite.Always);
                             }
                         }
                         else
                         {
                             if (File.Exists(syncLog.Action.RenameFrom))
                             {
-                                File.Move(syncLog.Action.RenameFrom, syncLog.Action.Path);
+                                File.Move(syncLog.Action.RenameFrom, syncLog.Action.RelativePath);
                             }
                             else
                             {
-                                File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path, true);
+                                File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.RelativePath, true);
                             }
                         }
                         successfull = true;
@@ -134,17 +134,17 @@ namespace ThreeOneThree.Proxima.Agent
                 }
                 else
                 {
-                    logger.Info($"[{syncLog.Id}] Copying {syncLog.Action.Path}");
+                    logger.Info($"[{syncLog.Id}] Copying {syncLog.Action.RelativePath}");
 
                     if (ConfigurationManager.AppSettings["Safety"] != "SAFE")
                     {
                         if (syncLog.Action.IsDirectory)
                         {
-                            Fluent.IO.Path.Get(syncLog.Entry.Reference.UniversalPath).Copy(syncLog.Action.Path, Overwrite.Always);
+                            Fluent.IO.Path.Get(syncLog.Entry.Reference.UniversalPath).Copy(syncLog.Action.RelativePath, Overwrite.Always);
                         }
                         else
                         {
-                            File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.Path, true);
+                            File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.RelativePath, true);
                         }
                         successfull = true;
                     }

@@ -57,10 +57,14 @@ namespace ThreeOneThree.Proxima.Agent
             {
                 try
                 {
-                    List<RawUSNEntry> entries = new List<RawUSNEntry>();
+                    
 
                     foreach (var sourceMount in Singleton.Instance.SourceMountpoints)
                     {
+
+                        List<RawUSNEntry> entries = new List<RawUSNEntry>();
+
+
                         var construct = new DriveConstruct(sourceMount.MountPoint);
                         Win32Api.USN_JOURNAL_DATA newUsnState;
                         List<Win32Api.UsnEntry> usnEntries;
@@ -110,7 +114,7 @@ namespace ThreeOneThree.Proxima.Agent
                                 dbEntry.RelativePath = Path.Get(actualPath).MakeRelativeTo(drivePath.FullPath.TrimEnd('\\')).ToString();
                                 
                                 dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f => 
-                                                                                     f.Action.Path == actualPath &&
+                                                                                     f.Action.RelativePath == actualPath &&
                                                                                      (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) && 
                                                                                      (f.ActionFinishDate.HasValue  && entry.TimeStamp <= f.ActionFinishDate ) ) 
                                                        > 0;
@@ -127,7 +131,6 @@ namespace ThreeOneThree.Proxima.Agent
                             sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
                             sourceMount.Volume = construct.Volume;
                             
-                            Console.WriteLine("USN: " + sourceMount.CurrentUSNLocation + " /  "+ sourceMount.Volume);
                             repo.Update(sourceMount);
 
                         }
@@ -136,12 +139,15 @@ namespace ThreeOneThree.Proxima.Agent
                             logger.Error("Error on Monitor - " + rtn.ToString());
                             throw new UsnJournalException(rtn);
                         }
-                    }
 
-                    if (entries.Any())
-                    {
-                        repo.Add<RawUSNEntry>(entries);
+                        if (entries.Any())
+                        {
+                            repo.Add<RawUSNEntry>(entries);
+                            RollupService.PerformRollup(entries, sourceMount);
+                        }
+
                     }
+                    
                 }
                 catch (Exception e)
                 {

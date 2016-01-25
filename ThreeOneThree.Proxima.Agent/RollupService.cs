@@ -13,7 +13,7 @@ namespace ThreeOneThree.Proxima.Agent
     public static class RollupService
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
-        public static List<FileAction> PerformRollup(List<RawUSNEntry> rawEntries, SyncMountpoint syncFrom)
+        public static List<FileAction> PerformRollup(List<RawUSNEntry> rawEntries, MonitoredMountpoint syncFrom)
         {
             var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value)).OrderBy(f => f.Path).ThenBy(f=>f.FileCreate)/*.Distinct(new JournalPathEqualityComparer())*/;
             
@@ -23,23 +23,31 @@ namespace ThreeOneThree.Proxima.Agent
             {
                 try
                 {
-                    var relativePath = GetRelativePath(entry.Path, syncFrom);
+                    //var relativePath = GetRelativePath(entry.RelativePath, syncFrom);
 
-                    if (entry.FileCreate.HasValue)
+                  /*  if (entry.FileCreate.HasValue)
                     {
-                        toReturn.Add(new FileAction()
+                        toReturn.Add(new UpdateAction()
                         {
                             IsDirectory = entry.Directory.HasValue && entry.Directory.Value,
-                            SourcePath = entry.Path,
-                            CreateFile = true,
-                            Path = relativePath,
-                            USN = entry.USN,
+                            RawPath = entry.Path,
+                            RelativePath = entry.RelativePath,
+                            USN = entry
                         });
+                        //toReturn.Add(new FileAction()
+                        //{
+                        //    IsDirectory = entry.Directory.HasValue && entry.Directory.Value,
+                        //    RawPath = entry.RelativePath,
+                        //    CreateFile = true,
+                        //    RelativePath = relativePath,
+                        //    USN = entry.USN,
+                        //});
                     }
-                    else if (entry.RenameNewName.HasValue)
+                    else */if (entry.RenameNewName.HasValue)
                     {
-                        var item = new FileAction();
+                        var item = new RenameAction();
                         item.IsDirectory = entry.Directory.HasValue && entry.Directory.Value;
+
                         if (rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN) == null)
                         {
                             item.RenameFrom = Singleton.Instance.Repository.One<RawUSNEntry>(f => f.FRN == entry.FRN && f.PFRN == entry.PFRN && f.RenameOldName.HasValue).Path;
@@ -48,26 +56,35 @@ namespace ThreeOneThree.Proxima.Agent
                         {
                             item.RenameFrom = rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN).Path;
                         }
-                        item.Path = relativePath;
-                        item.USN = entry.USN;
-                        item.SourcePath = entry.Path;
+
+                        item.RelativePath = entry.RelativePath;
+                        item.USN = entry;
+                        item.RawPath = entry.Path;
+                        item.Mountpoint = syncFrom;
 
                         toReturn.Add(item);
                     }
                     else if (entry.FileDelete.HasValue)
                     {
-                        toReturn.Add(new FileAction()
+                        toReturn.Add(new DeleteAction()
                         {
-                            Path = relativePath,
-                            USN = entry.USN,
-                            DeleteFile = true,
-                            SourcePath = entry.Path,
-                            IsDirectory = entry.Directory.HasValue && entry.Directory.Value
-                    });
+                            
+                            RelativePath = entry.RelativePath,
+                            USN = entry,
+                            RawPath = entry.Path,
+                            IsDirectory = entry.Directory.HasValue && entry.Directory.Value,
+                            Mountpoint = syncFrom
+                        });
                     }
                     else
                     {
-                        toReturn.Add(new FileAction() { Path= relativePath, USN = entry.USN, SourcePath = entry.Path, IsDirectory = entry.Directory.HasValue && entry.Directory.Value});
+                        toReturn.Add(new UpdateAction()
+                        {
+                            IsDirectory = entry.Directory.HasValue && entry.Directory.Value,
+                            RawPath = entry.Path,
+                            RelativePath = entry.RelativePath,
+                            USN = entry
+                        });
                     }
                 }
                 catch (Exception e)
@@ -77,34 +94,34 @@ namespace ThreeOneThree.Proxima.Agent
                 }
             }
 
-
-            var deletedFiles = toReturn.Where(f => f.DeleteFile).ToList();
+            var deletedFiles = toReturn.OfType<DeleteAction>().ToList();
 
             foreach (var deletedFile in deletedFiles)
             {
-                if (toReturn.Where(f => f.CreateFile).Select(f => f.Path).Contains(deletedFile.Path))
+                if (toReturn.OfType<UpdateAction>().Select(f => f.RelativePath).Contains(deletedFile.RelativePath))
                 {
                     toReturn.Remove(deletedFile);
                 }
 
-                toReturn.RemoveAll(f => f.Path == deletedFile.Path && f.USN < deletedFile.USN);
+                toReturn.RemoveAll(f => f.RelativePath == deletedFile.RelativePath && f.USN.Reference.USN < deletedFile.USN.Reference.USN);
             }
 
-            var fileActions = toReturn.Select(e => e.Path).Distinct().Select(f => toReturn.FirstOrDefault(a => a.Path == f)).ToList();
+            var fileActions = toReturn.Select(e => e.RelativePath).Distinct().Select(f => toReturn.FirstOrDefault(a => a.RelativePath == f)).ToList();
 
-            foreach (var source in fileActions.Where(f=> !String.IsNullOrWhiteSpace(f.RenameFrom)).ToList())
+            foreach (var source in fileActions.OfType<RenameAction>().ToList())
             {
-                if (fileActions.Any(f => f.SourcePath == source.RenameFrom))
+                if (fileActions.Any(f => f.RawPath == source.RenameFrom))
                 {
-                    fileActions.RemoveAll(f => f.SourcePath == source.RenameFrom);
+                    fileActions.RemoveAll(f => f.RawPath == source.RenameFrom);
                     fileActions.Remove(source);
-                    fileActions.Add(new FileAction()
+                    fileActions.Add(new RenameAction()
                     {
-                        Path = source.Path,
-                        SourcePath = source.SourcePath,
+                        RelativePath = source.RelativePath,
+                        RawPath = source.RawPath,
                         USN = source.USN,
                         IsDirectory = source.IsDirectory
-                });
+
+                    });
                 }
             }
 

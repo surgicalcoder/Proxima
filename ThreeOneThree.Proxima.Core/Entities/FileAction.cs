@@ -1,17 +1,29 @@
 namespace ThreeOneThree.Proxima.Core.Entities
 {
-    public class FileAction
+    public abstract class FileAction
     {
-        public bool CreateFile { get; set; }
-        public bool DeleteFile { get; set; }
+        public MongoRef<MonitoredMountpoint> Mountpoint { get; set; }
 
-        public string RenameTo { get; set; }
-
-        public string RenameFrom { get; set; }
-        public string Path { get; set; }
-        public string SourcePath { get; set; }
-        public long USN { get; set; }
+        public string RelativePath { get; set; }
+        public string RawPath { get; set; }
+        public MongoRef<RawUSNEntry> USN { get; set; }
 
         public bool IsDirectory { get; set; }
+    }
+
+    public class DeleteAction : FileAction
+    {
+        
+    }
+
+    public class UpdateAction : FileAction
+    {
+        
+    }
+
+    public class RenameAction : FileAction
+    {
+        public string RenameFrom { get; set; }
+        public string RenameTo { get; set; }
     }
 }
