@@ -1,4 +1,6 @@
-﻿namespace ThreeOneThree.Proxima.Core.Entities
+﻿using MongoDB.Bson;
+
+namespace ThreeOneThree.Proxima.Core.Entities
 {
     public abstract class MongoEntity
     {

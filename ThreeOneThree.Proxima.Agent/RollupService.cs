@@ -13,6 +13,45 @@ namespace ThreeOneThree.Proxima.Agent
     public static class RollupService
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
+
+
+        public static List<FileAction> PerformRollup(List<FileAction> toReturn)
+        {
+            var deletedFiles = toReturn.OfType<DeleteAction>().ToList();
+
+            foreach (var deletedFile in deletedFiles)
+            {
+                if (toReturn.OfType<UpdateAction>().Select(f => f.RelativePath).Contains(deletedFile.RelativePath))
+                {
+                    toReturn.Remove(deletedFile);
+                }
+
+                toReturn.RemoveAll(f => f.RelativePath == deletedFile.RelativePath && f.USN < deletedFile.USN);
+            }
+
+            var fileActions = toReturn.Select(e => e.RelativePath).Distinct().Select(f => toReturn.FirstOrDefault(a => a.RelativePath == f)).ToList();
+
+            foreach (var source in fileActions.OfType<RenameAction>().ToList())
+            {
+                if (fileActions.Any(f => f.RawPath == source.RenameFrom))
+                {
+                    fileActions.RemoveAll(f => f.RawPath == source.RenameFrom);
+                    fileActions.Remove(source);
+                    fileActions.Add(new RenameAction()
+                    {
+                        RelativePath = source.RelativePath,
+                        RawPath = source.RawPath,
+                        USN = source.USN,
+                        IsDirectory = source.IsDirectory,
+                        Mountpoint = source.Mountpoint
+                    });
+                }
+            }
+
+
+            return fileActions;
+        }
+
         public static List<FileAction> PerformRollup(List<RawUSNEntry> rawEntries, MonitoredMountpoint syncFrom)
         {
             var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value)).OrderBy(f => f.Path).ThenBy(f=>f.FileCreate)/*.Distinct(new JournalPathEqualityComparer())*/;
@@ -38,7 +77,8 @@ namespace ThreeOneThree.Proxima.Agent
                         }
 
                         item.RelativePath = entry.RelativePath;
-                        item.USN = entry;
+                        item.USNEntry = entry;
+                        item.USN = entry.USN;
                         item.RawPath = entry.Path;
                         item.Mountpoint = syncFrom;
 
@@ -50,7 +90,8 @@ namespace ThreeOneThree.Proxima.Agent
                         {
                             
                             RelativePath = entry.RelativePath,
-                            USN = entry,
+                            USN = entry.USN,
+                            USNEntry = entry,
                             RawPath = entry.Path,
                             IsDirectory = entry.Directory.HasValue && entry.Directory.Value,
                             Mountpoint = syncFrom
@@ -63,7 +104,8 @@ namespace ThreeOneThree.Proxima.Agent
                             IsDirectory = entry.Directory.HasValue && entry.Directory.Value,
                             RawPath = entry.Path,
                             RelativePath = entry.RelativePath,
-                            USN = entry,
+                            USN = entry.USN,
+                            USNEntry = entry,
                             Mountpoint = syncFrom
                         });
                     }
@@ -84,7 +126,7 @@ namespace ThreeOneThree.Proxima.Agent
                     toReturn.Remove(deletedFile);
                 }
 
-                toReturn.RemoveAll(f => f.RelativePath == deletedFile.RelativePath && f.USN.Reference.USN < deletedFile.USN.Reference.USN);
+                toReturn.RemoveAll(f => f.RelativePath == deletedFile.RelativePath && f.USN < deletedFile.USN);
             }
 
             var fileActions = toReturn.Select(e => e.RelativePath).Distinct().Select(f => toReturn.FirstOrDefault(a => a.RelativePath == f)).ToList();

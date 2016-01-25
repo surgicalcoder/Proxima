@@ -5,6 +5,7 @@ using System.IO;
 //using System.IO;
 using System.Linq;
 using Fluent.IO;
+using MongoDB.Bson;
 using NLog;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
@@ -35,16 +36,18 @@ namespace ThreeOneThree.Proxima.Agent
                     syncFrom.DestinationServer.Fetch(Singleton.Instance.Servers);
 
                     syncFrom.Mountpoint.Reference = repo.ById<MonitoredMountpoint>(syncFrom.Mountpoint.ReferenceId);
+                    
+                    var rawEntries = repo.Many<FileAction>(f => f.Mountpoint == syncFrom.Mountpoint && f.Id > syncFrom.LastSyncID).ToList();
 
-                    var rawEntries = repo.Many<RawUSNEntry>(e => !e.CausedBySync && !e.SystemFile.HasValue && e.USN > syncFrom.LastUSN && e.Mountpoint == syncFrom.Mountpoint && e.Path != "#UNKNOWN#").ToList();
-                    var changedFiles = RollupService.PerformRollup(rawEntries, syncFrom.Mountpoint.Reference).ToList();
+                    //var rawEntries = repo.Many<RawUSNEntry>(e => !e.CausedBySync && !e.SystemFile.HasValue && e.USN > syncFrom.LastUSN && e.Mountpoint == syncFrom.Mountpoint && e.Path != "#UNKNOWN#").ToList();
+                    var changedFiles = RollupService.PerformRollup(rawEntries).ToList();
 
                     if (rawEntries.Count == 0)
                     {
                         continue;
                     }
 
-                    long lastUsn = rawEntries.LastOrDefault().USN;
+                    string lastUsn = rawEntries.LastOrDefault().Id;
 
                     foreach (var fileAction in changedFiles)
                     {
@@ -52,7 +55,7 @@ namespace ThreeOneThree.Proxima.Agent
                         log.Enqueued = DateTime.Now;
                         log.DestinationMachine = Singleton.Instance.CurrentServer;
                         log.SourceMachine = syncFrom.Mountpoint.Reference.Server;
-                        log.Entry = fileAction.USN;
+                        log.Entry = fileAction.USNEntry;
                         log.Action = fileAction;
 
                         repo.Add(log);
@@ -60,7 +63,7 @@ namespace ThreeOneThree.Proxima.Agent
                         Singleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log, syncFrom));
 
                     }
-                    syncFrom.LastUSN = lastUsn;
+                    syncFrom.LastSyncID = lastUsn;
                     repo.Update(syncFrom);
                 }
             }
