@@ -84,15 +84,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Entities\DeleteAction.cs" />
     <Compile Include="Entities\FileAction.cs" />
     <Compile Include="Entities\MonitoredMountpoint.cs" />
+    <Compile Include="Entities\RenameAction.cs" />
     <Compile Include="Entities\Server.cs" />
     <Compile Include="Entities\SyncMountpoint.cs" />
+    <Compile Include="Entities\UpdateAction.cs" />
     <Compile Include="Entities\USNJournalSyncLog.cs" />
     <Compile Include="MongoRef.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="Entities\MongoEntity.cs" />
-    <Compile Include="MongoRefConvention.cs" />
+    <Compile Include="MongoRefSerializer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repository.cs" />
     <Compile Include="Entities\RawUSNEntry.cs" />

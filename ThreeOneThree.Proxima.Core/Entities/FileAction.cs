@@ -10,20 +10,4 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public long USN { get; set; }
         public bool IsDirectory { get; set; }
     }
-
-    public class DeleteAction : FileAction
-    {
-        
-    }
-
-    public class UpdateAction : FileAction
-    {
-        
-    }
-
-    public class RenameAction : FileAction
-    {
-        public string RenameFrom { get; set; }
-        public string RenameTo { get; set; }
-    }
 }

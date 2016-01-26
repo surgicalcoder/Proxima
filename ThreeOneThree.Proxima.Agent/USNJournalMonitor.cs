@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using NLog;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
@@ -110,9 +111,20 @@ namespace ThreeOneThree.Proxima.Agent
                                 dbEntry.USN = entry.USN;
                                 dbEntry.Mountpoint = sourceMount; 
                                 dbEntry.TimeStamp = entry.TimeStamp;
+                                // new Regex(Regex.Escape("F:\\"), RegexOptions.IgnoreCase).Replace(str, "", 1).TrimStart('\\')
+                                dbEntry.RelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
 
-                                dbEntry.RelativePath = Path.Get(actualPath).MakeRelativeTo(drivePath.FullPath.TrimEnd('\\')).ToString();
-                                
+                                //try
+                                //{
+                                //    dbEntry.RelativePath = Path.Get(actualPath).MakeRelativeTo(drivePath.FullPath).ToString();
+                                //}
+                                //catch (Exception e)
+                                //{
+                                //    logger.Warn(e, "Error attempting to turn into relative path - " + actualPath + " - " + drivePath.FullPath);
+                                //    AppDomain.Unload(AppDomain.CurrentDomain);
+                                //    dbEntry.RelativePath = actualPath;
+                                //}
+
                                 dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f => 
                                                                                      f.Action.RelativePath == actualPath &&
                                                                                      (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) && 
