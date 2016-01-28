@@ -126,7 +126,7 @@ namespace ThreeOneThree.Proxima.Agent
                                 //}
 
                                 dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f => 
-                                                                                     f.Action.RelativePath == actualPath &&
+                                                                                     f.Action.RelativePath == dbEntry.RelativePath &&
                                                                                      (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) && 
                                                                                      (f.ActionFinishDate.HasValue  && entry.TimeStamp <= f.ActionFinishDate ) ) 
                                                        > 0;

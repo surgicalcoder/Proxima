@@ -244,7 +244,10 @@ namespace ThreeOneThree.Proxima.Core
 
         public void Add<T>(IEnumerable<T> entities, string OverrideCollectionName = "") where T : MongoEntity
         {
-            mongoDatabase.GetCollection<T>(GetCollectionNameForType<T>(OverrideCollectionName)).InsertManyAsync(entities).Wait();
+            if (entities.Any())
+            {
+                mongoDatabase.GetCollection<T>(GetCollectionNameForType<T>(OverrideCollectionName)).InsertManyAsync(entities).Wait();
+            }
         }
 
         public void BulkInsert<T>(IEnumerable<T> entities, string OverrideCollectionName = "") where T : MongoEntity

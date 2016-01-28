@@ -129,8 +129,20 @@ namespace ThreeOneThree.Proxima.Agent
                     logger.Info($"[{syncLog.Id}] Copying {syncLog.Action.RelativePath}");
 
                     var copyAction = syncLog.Action as UpdateAction;
+                    
+                    var publicPath = syncFrom.Mountpoint.Reference.PublicPath;
+                    var relativePath = copyAction.RelativePath;
 
-                    Path.Get(syncFrom.Mountpoint.Reference.PublicPath, syncLog.Entry.Reference.RelativePath).Copy(Path.Get(syncFrom.Path, syncLog.Entry.Reference.RelativePath), Overwrite.Always, true);
+                    if (publicPath == null)
+                    {
+                        throw new NullReferenceException("publicPath");
+                    }
+                    if (relativePath == null)
+                    {
+                        throw new NullReferenceException("relativePath");
+                    }
+
+                    Path.Get(publicPath, relativePath).Copy(Path.Get(syncFrom.Path, relativePath), Overwrite.Always, true);
 
                     //if (syncLog.Action.IsDirectory)
                     //{
