@@ -21,7 +21,7 @@ namespace ThreeOneThree.Proxima.Agent
 
         public void Execute(IJobExecutionContext context)
         {
-            logger.Debug("USNJournalSync Execution");
+            //logger.Debug("USNJournalSync Execution");
             if (Singleton.Instance.DestinationMountpoints == null || Singleton.Instance.DestinationMountpoints.Count == 0)
             {
                 logger.Info("No destination points");
