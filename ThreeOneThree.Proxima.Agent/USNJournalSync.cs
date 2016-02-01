@@ -86,8 +86,17 @@ namespace ThreeOneThree.Proxima.Agent
                             }
                             else
                             {
+                                if (failedItem.Retries.Count == 20)
+                                {
+                                    failedItem.RequiresManualIntervention = true;
+
+                                    Singleton.Instance.Repository.Update(failedItem);
+                                    continue;
+                                }
                                 failedItem.Retries.Add(DateTime.Now);
                             }
+
+                            
 
                             TransferItem(failedItem, syncFrom);
 
