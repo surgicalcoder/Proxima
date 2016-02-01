@@ -5,6 +5,7 @@ using System.IO;
 using System.Management;
 using System.Linq;
 using System.Runtime.InteropServices;
+using NLog;
 
 namespace ThreeOneThree.Proxima.Agent
 {
@@ -739,6 +740,7 @@ namespace ThreeOneThree.Proxima.Agent
             return usnRtnCode;
         }
 
+        private static Logger logger = LogManager.GetCurrentClassLogger();
         /// <summary>
         /// Given a previous state, GetUsnJournalEntries() determines if the USN Journal is active and
         /// no USN Journal entries have been lost (i.e. USN Journal is valid), then
@@ -809,10 +811,10 @@ namespace ThreeOneThree.Proxima.Agent
                         Win32Api.READ_USN_JOURNAL_DATA rujd = new Win32Api.READ_USN_JOURNAL_DATA();
 
                         rujd.StartUsn = OverrideLastUsn > -1 ? OverrideLastUsn : previousUsnState.NextUsn;
-
+                        logger.Info("Start USN = " + rujd.StartUsn);
                         rujd.ReasonMask = reasonMask;
-                        rujd.ReturnOnlyOnClose = 0;
-                        rujd.Timeout = 0;
+                        rujd.ReturnOnlyOnClose =0;
+                        rujd.Timeout = 3;
                         rujd.bytesToWaitFor = 0;
                         rujd.UsnJournalId = previousUsnState.UsnJournalID;
                         int sizeRujd = Marshal.SizeOf(rujd);
