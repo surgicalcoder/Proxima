@@ -46,8 +46,11 @@ namespace ThreeOneThree.Proxima.Agent
                         }
 
                         logger.Debug("Polling for changes since " + syncFrom.LastUSN);
+
                         var rawEntries = repo.Many<FileAction>(f => f.Mountpoint == syncFrom.Mountpoint && f.USN > syncFrom.LastUSN, limit: 256).ToList();
+
                         
+
                         var changedFiles = RollupService.PerformRollup(rawEntries).ToList();
 
                         if (rawEntries.Count == 0)
@@ -71,6 +74,25 @@ namespace ThreeOneThree.Proxima.Agent
                             
                             TransferItem(log, syncFrom);
                         }
+
+
+                        var failedSync = repo.Many<USNJournalSyncLog>(f => !f.Successfull && f.Action.Mountpoint == syncFrom.Mountpoint, limit: 32);
+
+                        foreach (var failedItem in failedSync)
+                        {
+                            if (failedItem.Retries == null)
+                            {
+                                failedItem.Retries = new List<DateTime> { failedItem.ActionStartDate.Value};
+                            }
+                            else
+                            {
+                                failedItem.Retries.Add(DateTime.Now);
+                            }
+
+                            TransferItem(failedItem, syncFrom);
+
+                        }
+
                         syncFrom.LastUSN = lastUsn;
                         repo.Update(syncFrom);
 
@@ -91,6 +113,7 @@ namespace ThreeOneThree.Proxima.Agent
             try
             {
                 syncLog.ActionStartDate = DateTime.Now;
+                syncLog.ActionFinishDate = null;
                 Singleton.Instance.Repository.Update(syncLog);
 
                 bool successfull = false;

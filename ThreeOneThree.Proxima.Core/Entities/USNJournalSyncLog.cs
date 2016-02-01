@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace ThreeOneThree.Proxima.Core.Entities
 {
@@ -18,6 +19,8 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public bool Successfull { get; set; }
 
         public FileAction Action { get; set; }
+
+        public List<DateTime> Retries { get; set; }
 
     }
 }

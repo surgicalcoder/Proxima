@@ -224,20 +224,16 @@ namespace ThreeOneThree.Proxima.Core
         public IQueryable<T> Many<T>(Expression<Func<T, bool>> predicate, int limit=0, string OverrideCollectionName = "") where T : MongoEntity
         {
             var mongoCollection = mongoDatabase.GetCollection<T>(GetCollectionNameForType<T>(OverrideCollectionName));
-            //if (!mongoCollection.Exists())
-            //{
-            //    return new List<T>().AsQueryable();
-            //}
-            //return mongoCollection.AsQueryable().Where(predicate);
+
+            var retr = mongoCollection.Find(predicate);
+
             if (limit > 0)
             {
-                return mongoCollection.Find(predicate).Limit(limit).ToListAsync().Result.AsQueryable();
+                retr = retr.Limit(limit);
             }
-            else
-            {
-                return mongoCollection.Find(predicate).ToListAsync().Result.AsQueryable();
-            }
-            
+
+
+            return retr.ToListAsync().Result.AsQueryable();
         }
 
         public IQueryable<T> All<T>(string OverrideCollectionName = "") where T : MongoEntity
