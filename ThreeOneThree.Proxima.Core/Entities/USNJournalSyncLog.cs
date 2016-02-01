@@ -22,5 +22,6 @@ namespace ThreeOneThree.Proxima.Core.Entities
 
         public List<DateTime> Retries { get; set; }
 
+        public bool RequiresManualIntervention { get; set; }
     }
 }

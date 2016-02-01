@@ -76,7 +76,7 @@ namespace ThreeOneThree.Proxima.Agent
                         }
 
 
-                        var failedSync = repo.Many<USNJournalSyncLog>(f => !f.Successfull && f.Action.Mountpoint == syncFrom.Mountpoint, limit: 32);
+                        var failedSync = repo.Many<USNJournalSyncLog>(f => !f.Successfull && f.Action.Mountpoint == syncFrom.Mountpoint && !f.RequiresManualIntervention, limit: 32);
 
                         foreach (var failedItem in failedSync)
                         {
@@ -203,6 +203,12 @@ namespace ThreeOneThree.Proxima.Agent
             }
             catch (Exception e)
             {
+
+                if (e.GetType() == typeof (FileNotFoundException))
+                {
+                    syncLog.RequiresManualIntervention = true;
+                }
+
                 syncLog.ActionFinishDate = DateTime.Now;
                 Singleton.Instance.Repository.Update(syncLog);
 
