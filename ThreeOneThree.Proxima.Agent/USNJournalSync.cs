@@ -141,10 +141,10 @@ namespace ThreeOneThree.Proxima.Agent
                     }
 
                     successfull = true;
-                    
+
                 }
 
-                else if (syncLog.Action.GetType() == typeof(RenameAction))
+                else if (syncLog.Action.GetType() == typeof (RenameAction))
                 {
                     var renameAction = syncLog.Action as RenameAction;
 
@@ -168,14 +168,14 @@ namespace ThreeOneThree.Proxima.Agent
                     //}
                     successfull = true;
 
-                    
+
                 }
                 else
                 {
                     logger.Info($"[{syncLog.Id}] Copying {syncLog.Action.RelativePath}");
 
                     var copyAction = syncLog.Action as UpdateAction;
-                    
+
                     var publicPath = syncFrom.Mountpoint.Reference.PublicPath;
                     var relativePath = copyAction.RelativePath;
 
@@ -201,7 +201,7 @@ namespace ThreeOneThree.Proxima.Agent
                     //    File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.RelativePath, true);
                     //}
                     successfull = true;
-                    
+
                 }
 
 
@@ -210,14 +210,22 @@ namespace ThreeOneThree.Proxima.Agent
                 Singleton.Instance.Repository.Update(syncLog);
 
             }
+            catch (FileNotFoundException ex)
+            {
+                syncLog.RequiresManualIntervention = true;
+                syncLog.ActionFinishDate = DateTime.Now;
+                Singleton.Instance.Repository.Update(syncLog);
+
+                logger.Error(ex, "Error on item " + syncLog.Id);
+                Error error = new Error();
+                error.SyncLog = syncLog;
+                error.Exception = ex;
+                error.ItemId = syncLog.Id;
+                error.Message = ex.Message;
+                Singleton.Instance.Repository.Add(error);
+            }
             catch (Exception e)
             {
-
-                if (e.GetType() == typeof (FileNotFoundException))
-                {
-                    syncLog.RequiresManualIntervention = true;
-                }
-
                 syncLog.ActionFinishDate = DateTime.Now;
                 Singleton.Instance.Repository.Update(syncLog);
 
