@@ -1,5 +1,9 @@
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace ThreeOneThree.Proxima.Core.Entities
 {
+    [BsonDiscriminator(RootClass = true)]
+    [BsonKnownTypes(typeof(UpdateAction), typeof(DeleteAction), typeof(RenameAction))]
     public abstract class FileAction : MongoEntity
     {
         public MongoRef<MonitoredMountpoint> Mountpoint { get; set; }

@@ -39,6 +39,7 @@ namespace ThreeOneThree.Proxima.Agent
             }
 
             Singleton.Instance.SourceMountpoints.ForEach(f=>logger.Debug("Source: " + f.ToString()));
+            Singleton.Instance.DestinationMountpoints.ForEach(f=>logger.Debug("Destination: " + f.Path + " // " + f.Mountpoint));
 
 
             if (args.Length == 0 || TopshelfParameters.Contains(args[0].ToLowerInvariant()))

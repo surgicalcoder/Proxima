@@ -50,6 +50,9 @@
       <HintPath>..\packages\MongoDB.Driver.Core.2.2.0\lib\net45\MongoDB.Driver.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="NLog">
+      <HintPath>..\packages\NLog.4.2.2\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable, Version=1.1.36.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Collections.Immutable.1.1.36\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
@@ -84,6 +87,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ContentTypeDiscriminatorConvention.cs" />
     <Compile Include="Entities\DeleteAction.cs" />
     <Compile Include="Entities\FileAction.cs" />
     <Compile Include="Entities\MonitoredMountpoint.cs" />

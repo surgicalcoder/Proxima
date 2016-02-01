@@ -80,8 +80,12 @@ namespace ThreeOneThree.Proxima.Core
             {
                 
             }
-                
-            
+
+            try
+            {
+             BsonSerializer.RegisterDiscriminatorConvention(typeof(FileAction), new ContentTypeDiscriminatorConvention());   
+            }
+            catch (Exception e) { }
 
             if (!BsonClassMap.IsClassMapRegistered(typeof(MongoEntity)))
             {
@@ -217,7 +221,7 @@ namespace ThreeOneThree.Proxima.Core
 
         }
 
-        public IQueryable<T> Many<T>(Expression<Func<T, bool>> predicate, string OverrideCollectionName = "") where T : MongoEntity
+        public IQueryable<T> Many<T>(Expression<Func<T, bool>> predicate, int limit=0, string OverrideCollectionName = "") where T : MongoEntity
         {
             var mongoCollection = mongoDatabase.GetCollection<T>(GetCollectionNameForType<T>(OverrideCollectionName));
             //if (!mongoCollection.Exists())
@@ -225,7 +229,15 @@ namespace ThreeOneThree.Proxima.Core
             //    return new List<T>().AsQueryable();
             //}
             //return mongoCollection.AsQueryable().Where(predicate);
-            return mongoCollection.Find(predicate).ToListAsync().Result.AsQueryable();
+            if (limit > 0)
+            {
+                return mongoCollection.Find(predicate).Limit(limit).ToListAsync().Result.AsQueryable();
+            }
+            else
+            {
+                return mongoCollection.Find(predicate).ToListAsync().Result.AsQueryable();
+            }
+            
         }
 
         public IQueryable<T> All<T>(string OverrideCollectionName = "") where T : MongoEntity

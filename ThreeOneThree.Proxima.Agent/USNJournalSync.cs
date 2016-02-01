@@ -29,43 +29,58 @@ namespace ThreeOneThree.Proxima.Agent
             }
 
 
-            using (Repository repo = new Repository())
+            try
             {
-               foreach (var syncFrom in Singleton.Instance.DestinationMountpoints)
+                using (Repository repo = new Repository())
                 {
-                    syncFrom.DestinationServer.Fetch(Singleton.Instance.Servers);
-
-                    syncFrom.Mountpoint.Reference = repo.ById<MonitoredMountpoint>(syncFrom.Mountpoint.ReferenceId);
-                    
-                    var rawEntries = repo.Many<FileAction>(f => f.Mountpoint == syncFrom.Mountpoint && f.USN > syncFrom.LastUSN).ToList();
-
-                    //var rawEntries = repo.Many<RawUSNEntry>(e => !e.CausedBySync && !e.SystemFile.HasValue && e.USN > syncFrom.LastUSN && e.Mountpoint == syncFrom.Mountpoint && e.Path != "#UNKNOWN#").ToList();
-                    var changedFiles = RollupService.PerformRollup(rawEntries).ToList();
-
-                    if (rawEntries.Count == 0)
+                    foreach (var syncFrom in Singleton.Instance.DestinationMountpoints)
                     {
-                        continue;
+                        syncFrom.DestinationServer.Fetch(Singleton.Instance.Servers);
+
+                        syncFrom.Mountpoint.Reference = repo.ById<MonitoredMountpoint>(syncFrom.Mountpoint.ReferenceId);
+
+                        if (syncFrom.Mountpoint.Reference.PublicPath == null)
+                        {
+                            logger.Warn(string.Format("PublicPath for DestinationMountPoint:{0} is null! Aborting copy.", syncFrom.Id));
+                            continue;
+                        }
+
+                        logger.Debug("Polling for changes since " + syncFrom.LastUSN);
+                        var rawEntries = repo.Many<FileAction>(f => f.Mountpoint == syncFrom.Mountpoint && f.USN > syncFrom.LastUSN, limit: 256).ToList();
+
+                        //var rawEntries = repo.Many<RawUSNEntry>(e => !e.CausedBySync && !e.SystemFile.HasValue && e.USN > syncFrom.LastUSN && e.Mountpoint == syncFrom.Mountpoint && e.Path != "#UNKNOWN#").ToList();
+                        var changedFiles = RollupService.PerformRollup(rawEntries).ToList();
+
+                        if (rawEntries.Count == 0)
+                        {
+                            logger.Debug("No changes found!");
+                            continue;
+                        }
+                        logger.Info(string.Format("{0} changed files for {1}", changedFiles.Count, syncFrom.Id));
+                        long lastUsn = rawEntries.LastOrDefault().USN;
+
+                        foreach (var fileAction in changedFiles)
+                        {
+                            USNJournalSyncLog log = new USNJournalSyncLog();
+                            log.Enqueued = DateTime.Now;
+                            log.DestinationMachine = Singleton.Instance.CurrentServer;
+                            log.SourceMachine = syncFrom.Mountpoint.Reference.Server;
+                            log.Entry = fileAction.USNEntry;
+                            log.Action = fileAction;
+
+                            repo.Add(log);
+
+                            Singleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log, syncFrom));
+
+                        }
+                        syncFrom.LastUSN = lastUsn;
+                        repo.Update(syncFrom);
                     }
-
-                    long lastUsn = rawEntries.LastOrDefault().USN;
-
-                    foreach (var fileAction in changedFiles)
-                    {
-                        USNJournalSyncLog log = new USNJournalSyncLog();
-                        log.Enqueued = DateTime.Now;
-                        log.DestinationMachine = Singleton.Instance.CurrentServer;
-                        log.SourceMachine = syncFrom.Mountpoint.Reference.Server;
-                        log.Entry = fileAction.USNEntry;
-                        log.Action = fileAction;
-
-                        repo.Add(log);
-
-                        Singleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log, syncFrom));
-
-                    }
-                    syncFrom.LastUSN = lastUsn;
-                    repo.Update(syncFrom);
                 }
+            }
+            catch (Exception e)
+            {
+                logger.Error(e, "Error during JournalSync");
             }
         }
 
@@ -167,6 +182,12 @@ namespace ThreeOneThree.Proxima.Agent
             catch (Exception e)
             {
                 logger.Error(e, "Error on item " + syncLog.Id);
+                Error error = new Error();
+                error.SyncLog = syncLog;
+                error.Exception = e;
+                error.ItemId = syncLog.Id;
+                error.Message = e.Message;
+                Singleton.Instance.Repository.Add(error);
             }
         }
     }
