@@ -70,11 +70,12 @@ namespace ThreeOneThree.Proxima.Agent
 
                             repo.Add(log);
 
-                            Singleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log, syncFrom));
-
+                            // Singleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log, syncFrom));
+                            TransferItem(log, syncFrom);
                         }
                         syncFrom.LastUSN = lastUsn;
                         repo.Update(syncFrom);
+
                     }
                 }
             }
