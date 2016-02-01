@@ -47,8 +47,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                         logger.Debug("Polling for changes since " + syncFrom.LastUSN);
                         var rawEntries = repo.Many<FileAction>(f => f.Mountpoint == syncFrom.Mountpoint && f.USN > syncFrom.LastUSN, limit: 256).ToList();
-
-                        //var rawEntries = repo.Many<RawUSNEntry>(e => !e.CausedBySync && !e.SystemFile.HasValue && e.USN > syncFrom.LastUSN && e.Mountpoint == syncFrom.Mountpoint && e.Path != "#UNKNOWN#").ToList();
+                        
                         var changedFiles = RollupService.PerformRollup(rawEntries).ToList();
 
                         if (rawEntries.Count == 0)
@@ -69,8 +68,7 @@ namespace ThreeOneThree.Proxima.Agent
                             log.Action = fileAction;
 
                             repo.Add(log);
-
-                            // Singleton.Instance.ThreadPool.QueueWorkItem(() => TransferItem(log, syncFrom));
+                            
                             TransferItem(log, syncFrom);
                         }
                         syncFrom.LastUSN = lastUsn;
@@ -182,6 +180,9 @@ namespace ThreeOneThree.Proxima.Agent
             }
             catch (Exception e)
             {
+                syncLog.ActionFinishDate = DateTime.Now;
+                Singleton.Instance.Repository.Update(syncLog);
+
                 logger.Error(e, "Error on item " + syncLog.Id);
                 Error error = new Error();
                 error.SyncLog = syncLog;
