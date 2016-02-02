@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Fluent.IO;
 using NLog;
@@ -54,8 +55,15 @@ namespace ThreeOneThree.Proxima.Agent
 
         public static List<FileAction> PerformRollup(List<RawUSNEntry> rawEntries, MonitoredMountpoint syncFrom)
         {
-            var entries = rawEntries.Where(f => !f.CausedBySync && f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value)).OrderBy(f => f.Path).ThenBy(f=>f.FileCreate)/*.Distinct(new JournalPathEqualityComparer())*/;
-            
+            var entries = rawEntries.Where(f => !f.CausedBySync && f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value))/*.Distinct(new JournalPathEqualityComparer())*/;
+
+            if (syncFrom.IgnoreList.Any())
+            {
+                entries = syncFrom.IgnoreList.Select(ignore => new Regex(ignore)).Aggregate(entries, (current, regex) => current.Where(f => !regex.IsMatch(f.RelativePath)));
+            }
+
+            entries = entries.OrderBy(f => f.Path).ThenBy(f => f.FileCreate);
+
             var toReturn = new List<FileAction>();
 
             foreach (var entry in entries)

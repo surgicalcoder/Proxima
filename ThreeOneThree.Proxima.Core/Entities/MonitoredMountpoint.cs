@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace ThreeOneThree.Proxima.Core.Entities
 {
     public class MonitoredMountpoint : MongoEntity
@@ -9,6 +11,8 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public string PublicPath { get; set; }
 
         public string Volume { get; set; }
+
+        public List<string> IgnoreList { get; set; }
 
         public long CurrentUSNLocation { get; set; }
 
