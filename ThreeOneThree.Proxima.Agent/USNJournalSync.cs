@@ -45,7 +45,7 @@ namespace ThreeOneThree.Proxima.Agent
                             continue;
                         }
 
-                        logger.Debug("Polling for changes since " + syncFrom.LastUSN);
+                        //logger.Debug("Polling for changes since " + syncFrom.LastUSN);
 
                         var rawEntries = repo.Many<FileAction>(f => f.Mountpoint == syncFrom.Mountpoint && f.USN > syncFrom.LastUSN, limit: 256).ToList();
 
@@ -58,7 +58,7 @@ namespace ThreeOneThree.Proxima.Agent
                             //logger.Debug("No changes found!");
                             continue;
                         }
-                        logger.Info($"{changedFiles.Count} changed files for {syncFrom.Id}");
+                        //logger.Info($"{changedFiles.Count} changed files for {syncFrom.Id}");
                         long lastUsn = rawEntries.LastOrDefault().USN;
 
                         foreach (var fileAction in changedFiles)

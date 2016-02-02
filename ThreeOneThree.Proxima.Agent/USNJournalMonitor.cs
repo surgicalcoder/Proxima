@@ -48,7 +48,7 @@ namespace ThreeOneThree.Proxima.Agent
             //logger.Debug("USNJournalMonitor Execution");
             if (Singleton.Instance.SourceMountpoints == null || Singleton.Instance.SourceMountpoints.Count == 0)
             {
-                logger.Debug("No source mount points found");
+               // logger.Debug("No source mount points found");
                 return;
             }
 
@@ -160,7 +160,7 @@ namespace ThreeOneThree.Proxima.Agent
                                 //logger.Info(string.Format("Adding in {0} USNEntries", entries.Count));
                                 repo.Add<RawUSNEntry>(entries);
                                 var performRollup = RollupService.PerformRollup(entries, sourceMount);
-                                logger.Info(string.Format("Adding [{0} FileActions, {1} USNEntries", performRollup.Count, entries.Count));
+                                logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
                                 repo.Add<FileAction>(performRollup);
                             }
 

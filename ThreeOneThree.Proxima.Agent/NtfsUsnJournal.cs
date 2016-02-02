@@ -811,7 +811,7 @@ namespace ThreeOneThree.Proxima.Agent
                         Win32Api.READ_USN_JOURNAL_DATA rujd = new Win32Api.READ_USN_JOURNAL_DATA();
 
                         rujd.StartUsn = OverrideLastUsn > -1 ? OverrideLastUsn : previousUsnState.NextUsn;
-                        logger.Info("Start USN = " + rujd.StartUsn);
+                        //logger.Info("Start USN = " + rujd.StartUsn);
                         rujd.ReasonMask = reasonMask;
                         rujd.ReturnOnlyOnClose =0;
                         rujd.Timeout = 3;
