@@ -55,10 +55,10 @@ namespace ThreeOneThree.Proxima.Agent
 
                         if (rawEntries.Count == 0)
                         {
-                            logger.Debug("No changes found!");
+                            //logger.Debug("No changes found!");
                             continue;
                         }
-                        logger.Info(string.Format("{0} changed files for {1}", changedFiles.Count, syncFrom.Id));
+                        logger.Info($"{changedFiles.Count} changed files for {syncFrom.Id}");
                         long lastUsn = rawEntries.LastOrDefault().USN;
 
                         foreach (var fileAction in changedFiles)

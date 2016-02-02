@@ -79,7 +79,7 @@ namespace ThreeOneThree.Proxima.Agent
                            // logger.Debug("Back - "  + rtn + " // " + (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS));
                             if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                             {
-                                logger.Debug("USN returned with " + usnEntries.Count + " entries");
+                                //logger.Debug("USN returned with " + usnEntries.Count + " entries");
                                 foreach (var entry in usnEntries)
                                 {
                                     string rawPath;
@@ -157,10 +157,10 @@ namespace ThreeOneThree.Proxima.Agent
 
                             if (entries.Any())
                             {
-                                logger.Info(string.Format("Adding in {0} USNEntries", entries.Count));
+                                //logger.Info(string.Format("Adding in {0} USNEntries", entries.Count));
                                 repo.Add<RawUSNEntry>(entries);
                                 var performRollup = RollupService.PerformRollup(entries, sourceMount);
-                                logger.Info(string.Format("Adding in {0} FileActions", performRollup.Count));
+                                logger.Info(string.Format("Adding [{0} FileActions, {1} USNEntries", performRollup.Count, entries.Count));
                                 repo.Add<FileAction>(performRollup);
                             }
 
