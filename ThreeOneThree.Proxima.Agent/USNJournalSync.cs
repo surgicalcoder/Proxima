@@ -82,7 +82,10 @@ namespace ThreeOneThree.Proxima.Agent
                         {
                             if (failedItem.Retries == null)
                             {
-                                failedItem.Retries = new List<DateTime> { failedItem.ActionStartDate.Value};
+                                failedItem.Retries = new List<DateTime>
+                                {
+                                    failedItem.ActionStartDate ?? DateTime.Now
+                                };
                             }
                             else
                             {
