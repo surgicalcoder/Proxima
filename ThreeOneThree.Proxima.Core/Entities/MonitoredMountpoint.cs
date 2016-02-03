@@ -12,6 +12,8 @@ namespace ThreeOneThree.Proxima.Core.Entities
 
         public string Volume { get; set; }
 
+        public string RelativePathStartFilter { get; set; }
+
         public List<string> IgnoreList { get; set; }
 
         public long CurrentUSNLocation { get; set; }

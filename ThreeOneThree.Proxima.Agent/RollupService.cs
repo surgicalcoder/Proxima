@@ -77,7 +77,17 @@ namespace ThreeOneThree.Proxima.Agent
 
                         if (rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN) == null)
                         {
-                            item.RenameFrom = Singleton.Instance.Repository.One<RawUSNEntry>(f => f.FRN == entry.FRN && f.PFRN == entry.PFRN && f.RenameOldName.HasValue).Path;
+                            var oldEntry = Singleton.Instance.Repository.One<RawUSNEntry>(f => f.FRN == entry.FRN && f.RenameOldName.HasValue);
+                            if (oldEntry == null)
+                            {
+                                oldEntry = Singleton.Instance.Repository.One<RawUSNEntry>(f => f.FRN == entry.FRN && f.USN < entry.USN );
+                                if (oldEntry == null)
+                                {
+                                    logger.Warn("Unable to find Rename from entry for " + entry.Id + " - PFRN:" + entry.PFRN + ", FRN:" + entry.FRN);
+                                    continue;
+                                }
+                            }
+                            item.RenameFrom = oldEntry.Path;
                         }
                         else
                         {

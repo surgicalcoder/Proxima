@@ -74,9 +74,13 @@ namespace ThreeOneThree.Proxima.Agent
                             NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
 
                             var drivePath = Path.Get(construct.DriveLetter);
+                            
                             //logger.Info("Polling for changes from " + sourceMount.CurrentUSNLocation);
+
                             var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
-                           // logger.Debug("Back - "  + rtn + " // " + (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS));
+
+                            // logger.Debug("Back - "  + rtn + " // " + (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS));
+
                             if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                             {
                                 //logger.Debug("USN returned with " + usnEntries.Count + " entries");
@@ -102,8 +106,21 @@ namespace ThreeOneThree.Proxima.Agent
                                     }
 
                                     var dbEntry = new RawUSNEntry();
+
+                                    dbEntry.RelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
                                     PopulateFlags(dbEntry, entry);
 
+
+                                    if (!String.IsNullOrWhiteSpace(sourceMount.RelativePathStartFilter))
+                                    {
+                                        if (!dbEntry.RelativePath.StartsWith(sourceMount.RelativePathStartFilter) && (!dbEntry.RenameOldName.HasValue || !dbEntry.RenameOldName.Value ) )
+                                        {
+                                            continue;
+                                        }
+                                    }
+
+                                    PopulateFlags(dbEntry, entry);
+                                    
                                     dbEntry.Path = actualPath;
                                     dbEntry.File = entry.IsFile;
                                     dbEntry.Directory = entry.IsFolder;
@@ -113,26 +130,12 @@ namespace ThreeOneThree.Proxima.Agent
                                     dbEntry.USN = entry.USN;
                                     dbEntry.Mountpoint = sourceMount;
                                     dbEntry.TimeStamp = entry.TimeStamp;
-                                    // new Regex(Regex.Escape("F:\\"), RegexOptions.IgnoreCase).Replace(str, "", 1).TrimStart('\\')
-                                    dbEntry.RelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
-
-                                    //try
-                                    //{
-                                    //    dbEntry.RelativePath = Path.Get(actualPath).MakeRelativeTo(drivePath.FullPath).ToString();
-                                    //}
-                                    //catch (Exception e)
-                                    //{
-                                    //    logger.Warn(e, "Error attempting to turn into relative path - " + actualPath + " - " + drivePath.FullPath);
-                                    //    AppDomain.Unload(AppDomain.CurrentDomain);
-                                    //    dbEntry.RelativePath = actualPath;
-                                    //}
                                     
                                     dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f =>
                                                                                          f.Action.RelativePath == dbEntry.RelativePath &&
                                                                                          (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) &&
                                                                                          (f.ActionFinishDate.HasValue && entry.TimeStamp <= f.ActionFinishDate))
                                                            > 0;
-                                  //  logger.Debug("Caused by sync? " + dbEntry.CausedBySync);
                                     if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
                                     {
                                         dbEntry.SystemFile = true;
@@ -157,7 +160,6 @@ namespace ThreeOneThree.Proxima.Agent
 
                             if (entries.Any())
                             {
-                                //logger.Info(string.Format("Adding in {0} USNEntries", entries.Count));
                                 repo.Add<RawUSNEntry>(entries);
                                 var performRollup = RollupService.PerformRollup(entries, sourceMount);
                                 logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
