@@ -47,9 +47,26 @@ namespace ThreeOneThree.Proxima.Agent
 
                         //logger.Debug("Polling for changes since " + syncFrom.LastUSN);
 
-                        var rawEntries = repo.Many<FileAction>(f => f.Mountpoint == syncFrom.Mountpoint && f.USN > syncFrom.LastUSN, limit: 256).ToList();
+                        List<FileAction> rawEntries;
 
-                        
+                        if (String.IsNullOrWhiteSpace(syncFrom.RelativePathStartFilter))
+                        {
+                            rawEntries = repo.Many<FileAction>(f =>
+                                                               f.Mountpoint == syncFrom.Mountpoint
+                                                               && f.USN > syncFrom.LastUSN,
+
+                                limit: 256).ToList();
+                        }
+                        else
+                        {
+                            rawEntries = repo.Many<FileAction>(f =>
+                                                                f.RelativePath.StartsWith(syncFrom.RelativePathStartFilter)
+                                                               && f.Mountpoint == syncFrom.Mountpoint
+                                                               && f.USN > syncFrom.LastUSN,
+
+                                limit: 256).ToList();
+                        }
+
 
                         var changedFiles = RollupService.PerformRollup(rawEntries).ToList();
 

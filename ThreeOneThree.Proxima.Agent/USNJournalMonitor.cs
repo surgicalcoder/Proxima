@@ -111,13 +111,15 @@ namespace ThreeOneThree.Proxima.Agent
                                     PopulateFlags(dbEntry, entry);
 
 
-                                    if (!String.IsNullOrWhiteSpace(sourceMount.RelativePathStartFilter))
-                                    {
-                                        if (!dbEntry.RelativePath.StartsWith(sourceMount.RelativePathStartFilter) && (!dbEntry.RenameOldName.HasValue || !dbEntry.RenameOldName.Value ) )
-                                        {
-                                            continue;
-                                        }
-                                    }
+                                    //if (!String.IsNullOrWhiteSpace(sourceMount.RelativePathStartFilter))
+                                    //{
+
+                                    //    if (dbEntry.RelativePath.StartsWith(sourceMount.RelativePathStartFilter) && (!dbEntry.RenameOldName.HasValue || !dbEntry.RenameOldName.Value))
+                                    //    {
+                                    //        continue;
+                                    //    }
+                                        
+                                    //}
 
                                     PopulateFlags(dbEntry, entry);
                                     

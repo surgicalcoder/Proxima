@@ -89,6 +89,7 @@
   <ItemGroup>
     <Compile Include="ContentTypeDiscriminatorConvention.cs" />
     <Compile Include="Entities\DeleteAction.cs" />
+    <Compile Include="Entities\Error.cs" />
     <Compile Include="Entities\FileAction.cs" />
     <Compile Include="Entities\MonitoredMountpoint.cs" />
     <Compile Include="Entities\RenameAction.cs" />
