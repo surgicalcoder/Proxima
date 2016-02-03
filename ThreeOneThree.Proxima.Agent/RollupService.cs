@@ -57,7 +57,7 @@ namespace ThreeOneThree.Proxima.Agent
         {
             var entries = rawEntries.Where(f => !f.CausedBySync && f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value))/*.Distinct(new JournalPathEqualityComparer())*/;
 
-            if (syncFrom.IgnoreList.Any())
+            if (syncFrom.IgnoreList != null && syncFrom.IgnoreList.Any())
             {
                 entries = syncFrom.IgnoreList.Select(ignore => new Regex(ignore)).Aggregate(entries, (current, regex) => current.Where(f => !regex.IsMatch(f.RelativePath)));
             }
