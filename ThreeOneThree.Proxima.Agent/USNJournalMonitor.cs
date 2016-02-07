@@ -83,11 +83,16 @@ namespace ThreeOneThree.Proxima.Agent
 
                             if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                             {
-                                //logger.Debug("USN returned with " + usnEntries.Count + " entries");
+                               // logger.Debug("USN returned with " + usnEntries.Count + " entries");
                                 foreach (var entry in usnEntries)
                                 {
                                     string rawPath;
                                     string actualPath;
+
+                                    if (entry.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement)
+                                    {
+                                        continue;
+                                    }
 
                                     var usnRtnCode = journal.GetPathFromFileReference(entry.ParentFileReferenceNumber, out rawPath);
 

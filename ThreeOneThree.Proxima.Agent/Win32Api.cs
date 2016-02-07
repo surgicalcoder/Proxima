@@ -586,11 +586,21 @@ namespace ThreeOneThree.Proxima.Agent
             private const int FR_OFFSET = 8;
             private const int PFR_OFFSET = 16;
             private const int USN_OFFSET = 24;
+            private const int TIME_OFFSET = 32;
             private const int REASON_OFFSET = 40;
-            public const int FA_OFFSET = 52;
+            private const int SOURCEINFO_OFFSET = 44;
+            private const int SECURITYID_OFFSET = 48;
+            private const int FA_OFFSET = 52;
             private const int FNL_OFFSET = 56;
             private const int FN_OFFSET = 58;
-            private const int TIME_OFFSET = 32;
+
+            [Flags]
+            public enum USNJournalSourceInfo : uint
+            {
+                DataManagement = 0x00000001,
+                AuxiliaryData = 0x00000002,
+                ReplicationManagement = 0x00000004
+            }
 
             private UInt32 _recordLength;
             public UInt32 RecordLength
@@ -606,6 +616,16 @@ namespace ThreeOneThree.Proxima.Agent
             public Int64 USN
             {
                 get { return _usn; }
+            }
+
+            private UInt64 _sourceInfo;
+
+            public USNJournalSourceInfo SourceInfo
+            {
+                get
+                {
+                    return (USNJournalSourceInfo) _sourceInfo;
+                }
             }
 
             private UInt64 _frn;
@@ -691,6 +711,7 @@ namespace ThreeOneThree.Proxima.Agent
                 _usn = (Int64)Marshal.ReadInt64(ptrToUsnRecord, USN_OFFSET);
                 _reason = (UInt32)Marshal.ReadInt32(ptrToUsnRecord, REASON_OFFSET);
                 _fileAttributes = (UInt32)Marshal.ReadInt32(ptrToUsnRecord, FA_OFFSET);
+                _sourceInfo = (UInt32) Marshal.ReadInt32(ptrToUsnRecord, SOURCEINFO_OFFSET);
                 //FILETIME blarg;
 
                 _timeStamp = DateTime.FromFileTimeUtc((Int64) Marshal.ReadInt64(ptrToUsnRecord, TIME_OFFSET));
