@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Fluent.IO;
 using NLog;
+using ThreeOneThree.Proxima.Core;
 using ThreeOneThree.Proxima.Core.Entities;
 
 namespace ThreeOneThree.Proxima.Agent
@@ -53,7 +54,7 @@ namespace ThreeOneThree.Proxima.Agent
             return fileActions;
         }
 
-        public static List<FileAction> PerformRollup(List<RawUSNEntry> rawEntries, MonitoredMountpoint syncFrom)
+        public static List<FileAction> PerformRollup(List<RawUSNEntry> rawEntries, MonitoredMountpoint syncFrom, Repository repository)
         {
             var entries = rawEntries.Where(f => !f.CausedBySync && f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value))/*.Distinct(new JournalPathEqualityComparer())*/;
 
@@ -75,23 +76,32 @@ namespace ThreeOneThree.Proxima.Agent
                         var item = new RenameAction();
                         item.IsDirectory = entry.Directory.HasValue && entry.Directory.Value;
 
-                        if (rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN) == null)
+                        if (rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN) == null && repository != null)
                         {
-                            var oldEntry = Singleton.Instance.Repository.One<RawUSNEntry>(f => f.FRN == entry.FRN && f.RenameOldName.HasValue);
+                            var oldEntry = repository.One<RawUSNEntry>(f => f.FRN == entry.FRN && f.RenameOldName.HasValue);
+
                             if (oldEntry == null)
                             {
-                                oldEntry = Singleton.Instance.Repository.One<RawUSNEntry>(f => f.FRN == entry.FRN && f.USN < entry.USN );
+                                oldEntry = repository.One<RawUSNEntry>(f => f.FRN == entry.FRN && f.USN < entry.USN );
                                 if (oldEntry == null)
                                 {
                                     logger.Warn("Unable to find Rename from entry for " + entry.Id + " - PFRN:" + entry.PFRN + ", FRN:" + entry.FRN);
                                     continue;
                                 }
                             }
-                            item.RenameFrom = oldEntry.Path;
+
+                        item.RenameFrom = oldEntry.Path;
                         }
                         else
                         {
-                            item.RenameFrom = rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN).Path;
+                            if (rawEntries.Any(f => f.RenameOldName.HasValue && f.FRN == entry.FRN))
+                            {
+                                item.RenameFrom = rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN).Path;
+                            }
+                            else
+                            {
+                                continue;
+                            }
                         }
 
                         item.RelativePath = entry.RelativePath;
@@ -161,7 +171,8 @@ namespace ThreeOneThree.Proxima.Agent
                         RawPath = source.RawPath,
                         USN = source.USN,
                         IsDirectory = source.IsDirectory,
-                        Mountpoint = syncFrom
+                        Mountpoint = syncFrom,
+                        RenameFrom = source.RenameFrom == source.RawPath ? null : ""
                     });
                 }
             }

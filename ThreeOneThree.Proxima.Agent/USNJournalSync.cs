@@ -93,7 +93,18 @@ namespace ThreeOneThree.Proxima.Agent
                         }
 
 
-                        var failedSync = repo.Many<USNJournalSyncLog>(f => !f.Successfull && f.Action.Mountpoint == syncFrom.Mountpoint && !f.RequiresManualIntervention, limit: 32);
+                        IQueryable<USNJournalSyncLog> failedSync;
+
+                        if (String.IsNullOrWhiteSpace(syncFrom.RelativePathStartFilter))
+                        {
+                            failedSync = repo.Many<USNJournalSyncLog>(f => !f.Successfull && f.Action.Mountpoint == syncFrom.Mountpoint && !f.RequiresManualIntervention, limit: 32);
+                        }
+                        else
+                        {
+                            failedSync = repo.Many<USNJournalSyncLog>(f => f.Action.RelativePath.StartsWith(syncFrom.RelativePathStartFilter) && !f.Successfull && f.Action.Mountpoint == syncFrom.Mountpoint && !f.RequiresManualIntervention, limit: 32);
+                        }
+
+                        
 
                         foreach (var failedItem in failedSync)
                         {
@@ -151,14 +162,21 @@ namespace ThreeOneThree.Proxima.Agent
                 {
                     logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.RelativePath}");
 
-                    if (syncLog.Action.IsDirectory)
+                    var path = Path.Get(syncFrom.Path, syncLog.Action.RelativePath);
+
+                    
+                    if (path.Exists)
                     {
-                        Path.Get(syncFrom.Path, syncLog.Action.RelativePath).Delete(true);
+                        if (syncLog.Action.IsDirectory)
+                        {
+                            path.Delete(true);
+                        }
+                        else
+                        {
+                            path.Delete(true);
+                        }
                     }
-                    else
-                    {
-                        Path.Get(syncFrom.Path, syncLog.Action.RelativePath).Delete(true);
-                    }
+
 
                     successfull = true;
 
@@ -170,7 +188,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                     logger.Info($"[{syncLog.Id}] Moving {renameAction.RenameFrom} to {renameAction.RenameTo}");
 
-                    Path.Get(syncFrom.Path, renameAction.RenameFrom).Move(Path.Get(syncFrom.Path, renameAction.RenameTo).FullPath);
+                    Path.Get(syncFrom.Path, renameAction.RenameFrom).Move(Path.Get(syncFrom.Path, renameAction.RelativePath).FullPath);
                     //if (syncLog.Action.IsDirectory)
                     //{
 

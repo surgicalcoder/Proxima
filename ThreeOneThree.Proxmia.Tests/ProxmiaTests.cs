@@ -36,7 +36,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference, null);
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual("file1.txt", result[0].RelativePath);
         }
@@ -54,7 +54,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
             
 
-            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference, null);
             
             Assert.AreEqual(result.Count, 1);
         }
@@ -69,7 +69,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference, null);
 
             Assert.AreEqual(result.Count, 0);
         }
@@ -84,9 +84,23 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference, null);
 
             Assert.AreEqual(result.Count, 1);
+        }
+
+        [Test]
+        public void InvalidRenameTest()
+        {
+            List<RawUSNEntry> entries = new List<RawUSNEntry>
+            {
+                new RawUSNEntry {Close = true, Path = sourcePath + "file2.txt", USN = 12301, FRN = 1001, PFRN = 1002, RenameNewName= true},
+            };
+
+
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference, null);
+
+            Assert.AreEqual(result.Count, 0);
         }
 
         [Test]
@@ -99,7 +113,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference, null);
 
             Assert.AreEqual(0, result.Count);
         }
@@ -116,7 +130,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference, null);
 
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(0, result.OfType<DeleteAction>().Count());
@@ -132,7 +146,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference, null);
 
             Assert.AreEqual(1, result.Count);
         }
@@ -150,7 +164,7 @@ namespace ThreeOneThree.Proxmia.Tests
             };
 
 
-            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference);
+            var result = RollupService.PerformRollup(entries, mountPoint.Mountpoint.Reference, null);
 
             Assert.AreEqual(1, result.Count);
 

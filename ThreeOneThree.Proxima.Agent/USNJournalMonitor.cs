@@ -83,7 +83,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                             if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                             {
-                               // logger.Debug("USN returned with " + usnEntries.Count + " entries");
+                                logger.Debug("USN returned with " + usnEntries.Count + " entries");
                                 foreach (var entry in usnEntries)
                                 {
                                     string rawPath;
@@ -168,7 +168,7 @@ namespace ThreeOneThree.Proxima.Agent
                             if (entries.Any())
                             {
                                 repo.Add<RawUSNEntry>(entries);
-                                var performRollup = RollupService.PerformRollup(entries, sourceMount);
+                                var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
                                 logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
                                 repo.Add<FileAction>(performRollup);
                             }
