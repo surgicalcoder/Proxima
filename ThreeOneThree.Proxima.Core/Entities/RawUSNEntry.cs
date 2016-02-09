@@ -8,7 +8,7 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public string Path { get; set; }
 
         public string RelativePath { get; set; }
-
+        public string SourceInfo { get; set; }
         public bool? File { get; set; }
         public bool? Directory { get; set; }
 

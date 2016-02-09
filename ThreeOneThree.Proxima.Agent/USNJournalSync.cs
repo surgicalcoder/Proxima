@@ -187,69 +187,27 @@ namespace ThreeOneThree.Proxima.Agent
                 {
                     var renameAction = syncLog.Action as RenameAction;
 
-                    logger.Info($"[{syncLog.Id}] [M] {renameAction.RenameFrom} to {renameAction.RelativePath}");
+                    logger.Info($"[{syncLog.Id}] [R] {renameAction.RenameFrom} to {renameAction.RelativePath}");
 
                     if (String.IsNullOrWhiteSpace(renameAction.RenameFrom))
                     {
-                        syncLog.Successfull = false;
-                        syncLog.RequiresManualIntervention = true;
-                        syncLog.ActionFinishDate = DateTime.Now;
-                        Singleton.Instance.Repository.Update(syncLog);
+                        CopyFile(syncLog, syncFrom);
+                        //syncLog.Successfull = false;
+                        //syncLog.RequiresManualIntervention = true;
+                        //syncLog.ActionFinishDate = DateTime.Now;
+                        //Singleton.Instance.Repository.Update(syncLog);
 
                     }
 
                     Path.Get(syncFrom.Path, renameAction.RenameFrom).Move(Path.Get(syncFrom.Path, renameAction.RelativePath).FullPath);
-                    //if (syncLog.Action.IsDirectory)
-                    //{
 
-                    //}
-                    //else
-                    //{
-                    //    if (File.Exists(syncLog.Action.RenameFrom))
-                    //    {
-                    //        File.Move(syncLog.Action.RenameFrom, syncLog.Action.RelativePath);
-                    //    }
-                    //    else
-                    //    {
-                    //        File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.RelativePath, true);
-                    //    }
-                    //}
                     successfull = true;
 
 
                 }
                 else
                 {
-                    logger.Info($"[{syncLog.Id}] [C] {syncLog.Action.RelativePath}");
-
-                    var copyAction = syncLog.Action as UpdateAction;
-
-                    var publicPath = syncFrom.Mountpoint.Reference.PublicPath;
-                    var relativePath = copyAction.RelativePath;
-
-                    if (publicPath == null)
-                    {
-                        throw new NullReferenceException("publicPath");
-                    }
-                    if (relativePath == null)
-                    {
-                        throw new NullReferenceException("relativePath");
-                    }
-
-                    Path.Get(publicPath, relativePath).Copy(Path.Get(syncFrom.Path, relativePath), Overwrite.Always, true);
-
-                    //if (syncLog.Action.IsDirectory)
-                    //{
-                    //    Path.Get(syncFrom.Mountpoint.Reference.PublicPath, syncLog.Entry.Reference.RelativePath).Copy(Path.Get(syncFrom.Path, syncLog.Entry.Reference.RelativePath), Overwrite.Always, true);
-                    //    //Path.Get(syncLog.Entry.Reference. .UniversalPath).Copy(syncLog.Action.RelativePath, Overwrite.Always);
-                    //}
-                    //else
-                    //{
-
-                    //    File.Copy(syncLog.Entry.Reference.UniversalPath, syncLog.Action.RelativePath, true);
-                    //}
-                    successfull = true;
-
+                    successfull = CopyFile(syncLog, syncFrom);
                 }
 
 
@@ -285,6 +243,31 @@ namespace ThreeOneThree.Proxima.Agent
                 error.Message = e.Message;
                 Singleton.Instance.Repository.Add(error);
             }
+        }
+
+        private static bool CopyFile(USNJournalSyncLog syncLog, SyncMountpoint syncFrom)
+        {
+            bool successfull;
+            logger.Info($"[{syncLog.Id}] [C] {syncLog.Action.RelativePath}");
+
+            var copyAction = syncLog.Action as UpdateAction;
+
+            var publicPath = syncFrom.Mountpoint.Reference.PublicPath;
+            var relativePath = copyAction.RelativePath;
+
+            if (publicPath == null)
+            {
+                throw new NullReferenceException("publicPath");
+            }
+            if (relativePath == null)
+            {
+                throw new NullReferenceException("relativePath");
+            }
+
+            Path.Get(publicPath, relativePath).Copy(Path.Get(syncFrom.Path, relativePath), Overwrite.Always, true);
+
+            successfull = true;
+            return successfull;
         }
     }
 }

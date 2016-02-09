@@ -89,7 +89,7 @@ namespace ThreeOneThree.Proxima.Agent
                                     string rawPath;
                                     string actualPath;
 
-                                    if (entry.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement)
+                                    if (entry.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement || entry.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement)
                                     {
                                         continue;
                                     }
@@ -137,6 +137,7 @@ namespace ThreeOneThree.Proxima.Agent
                                     dbEntry.USN = entry.USN;
                                     dbEntry.Mountpoint = sourceMount;
                                     dbEntry.TimeStamp = entry.TimeStamp;
+                                    dbEntry.SourceInfo = entry.SourceInfo.ToString();
                                     
                                     dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f =>
                                                                                          f.Action.RelativePath == dbEntry.RelativePath &&

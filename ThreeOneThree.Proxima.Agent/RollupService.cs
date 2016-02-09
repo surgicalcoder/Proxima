@@ -76,32 +76,21 @@ namespace ThreeOneThree.Proxima.Agent
                         var item = new RenameAction();
                         item.IsDirectory = entry.Directory.HasValue && entry.Directory.Value;
 
-                        if (rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN && f.PFRN == entry.PFRN) == null && repository != null)
+                        if (!rawEntries.Any(f => f.RenameOldName.HasValue && f.FRN == entry.FRN) && repository != null)
                         {
-                            var oldEntry = repository.One<RawUSNEntry>(f => f.FRN == entry.FRN && f.RenameOldName.HasValue);
+                            var oldEntry = repository.Many<RawUSNEntry>(f => f.FRN == entry.FRN && (f.RenameOldName.HasValue || f.USN < entry.USN) ).OrderByDescending(f=>f.USN);
 
-                            if (oldEntry == null)
-                            {
-                                oldEntry = repository.One<RawUSNEntry>(f => f.FRN == entry.FRN && f.USN < entry.USN );
-                                if (oldEntry == null)
-                                {
-                                    logger.Warn("Unable to find Rename from entry for " + entry.Id + " - PFRN:" + entry.PFRN + ", FRN:" + entry.FRN);
-                                    continue;
-                                }
-                            }
-
-                        item.RenameFrom = oldEntry.Path;
+                            item.RenameFrom = oldEntry.FirstOrDefault().RelativePath;
                         }
                         else
                         {
-                            if (rawEntries.Any(f => f.RenameOldName.HasValue && f.FRN == entry.FRN))
-                            {
-                                item.RenameFrom = rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN).Path;
-                            }
-                            else
-                            {
-                                continue;
-                            }
+                            item.RenameFrom = rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN).RelativePath;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(item.RenameFrom))
+                        {
+                            logger.Warn("Unable to find RenameFrom for USN item " + item.USN );
+                            continue;
                         }
 
                         item.RelativePath = entry.RelativePath;
@@ -116,7 +105,6 @@ namespace ThreeOneThree.Proxima.Agent
                     {
                         toReturn.Add(new DeleteAction()
                         {
-                            
                             RelativePath = entry.RelativePath,
                             USN = entry.USN,
                             USNEntry = entry,
@@ -172,7 +160,7 @@ namespace ThreeOneThree.Proxima.Agent
                         USN = source.USN,
                         IsDirectory = source.IsDirectory,
                         Mountpoint = syncFrom,
-                        RenameFrom = source.RenameFrom == source.RawPath ? null : ""
+                        RenameFrom = source.RenameFrom
                     });
                 }
             }
