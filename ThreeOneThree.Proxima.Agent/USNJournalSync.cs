@@ -160,10 +160,11 @@ namespace ThreeOneThree.Proxima.Agent
 
                 if (syncLog.Action.GetType() == typeof (DeleteAction))
                 {
-                    logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.RelativePath}");
+                    //logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.RelativePath}");
 
                     var path = Path.Get(syncFrom.Path, syncLog.Action.RelativePath);
 
+                    logger.Info("[{syncLog.Id}] [D] " + path);
                     
                     if (path.Exists)
                     {
@@ -186,7 +187,16 @@ namespace ThreeOneThree.Proxima.Agent
                 {
                     var renameAction = syncLog.Action as RenameAction;
 
-                    logger.Info($"[{syncLog.Id}] Moving {renameAction.RenameFrom} to {renameAction.RenameTo}");
+                    logger.Info($"[{syncLog.Id}] [M] {renameAction.RenameFrom} to {renameAction.RelativePath}");
+
+                    if (String.IsNullOrWhiteSpace(renameAction.RenameFrom))
+                    {
+                        syncLog.Successfull = false;
+                        syncLog.RequiresManualIntervention = true;
+                        syncLog.ActionFinishDate = DateTime.Now;
+                        Singleton.Instance.Repository.Update(syncLog);
+
+                    }
 
                     Path.Get(syncFrom.Path, renameAction.RenameFrom).Move(Path.Get(syncFrom.Path, renameAction.RelativePath).FullPath);
                     //if (syncLog.Action.IsDirectory)
@@ -210,7 +220,7 @@ namespace ThreeOneThree.Proxima.Agent
                 }
                 else
                 {
-                    logger.Info($"[{syncLog.Id}] Copying {syncLog.Action.RelativePath}");
+                    logger.Info($"[{syncLog.Id}] [C] {syncLog.Action.RelativePath}");
 
                     var copyAction = syncLog.Action as UpdateAction;
 
