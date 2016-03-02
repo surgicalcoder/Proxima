@@ -21,10 +21,10 @@ namespace ThreeOneThree.Proxima.Agent
 
         public void Execute(IJobExecutionContext context)
         {
-            //logger.Debug("USNJournalSync Execution");
+            logger.Trace("USNJournalSync Execution");
             if (Singleton.Instance.DestinationMountpoints == null || Singleton.Instance.DestinationMountpoints.Count == 0)
             {
-                //logger.Info("No destination points");
+                logger.Trace("No destination points");
                 return;
             }
 
@@ -44,9 +44,7 @@ namespace ThreeOneThree.Proxima.Agent
                             logger.Warn(string.Format("PublicPath for DestinationMountPoint:{0} is null! Aborting copy.", syncFrom.Id));
                             continue;
                         }
-
-                        //logger.Debug("Polling for changes since " + syncFrom.LastUSN);
-
+                        
                         List<FileAction> rawEntries;
 
                         if (String.IsNullOrWhiteSpace(syncFrom.RelativePathStartFilter))
@@ -75,7 +73,7 @@ namespace ThreeOneThree.Proxima.Agent
                             //logger.Debug("No changes found!");
                             continue;
                         }
-                        //logger.Info($"{changedFiles.Count} changed files for {syncFrom.Id}");
+                        logger.Trace($"{changedFiles.Count} changed files for {syncFrom.Id}");
                         long lastUsn = rawEntries.LastOrDefault().USN;
 
                         foreach (var fileAction in changedFiles)
@@ -214,6 +212,11 @@ namespace ThreeOneThree.Proxima.Agent
                 syncLog.ActionFinishDate = DateTime.Now;
                 syncLog.Successfull = successfull;
                 Singleton.Instance.Repository.Update(syncLog);
+
+                foreach (var error in Singleton.Instance.Repository.Many<Error>(f=>f.SyncLog.Id == syncLog.Id))
+                {
+                    Singleton.Instance.Repository.Delete(error);
+                }
 
             }
             catch (FileNotFoundException ex)

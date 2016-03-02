@@ -226,7 +226,7 @@ namespace ThreeOneThree.Proxima.Core
             var mongoCollection = mongoDatabase.GetCollection<T>(GetCollectionNameForType<T>(OverrideCollectionName));
 
             var retr = mongoCollection.Find(predicate);
-
+            
             if (limit > 0)
             {
                 retr = retr.Limit(limit);

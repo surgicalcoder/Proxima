@@ -45,14 +45,12 @@ namespace ThreeOneThree.Proxima.Agent
 
         public void Execute(IJobExecutionContext context)
         {
-            //logger.Debug("USNJournalMonitor Execution");
+            logger.Trace("USNJournalMonitor Execution");
             if (Singleton.Instance.SourceMountpoints == null || Singleton.Instance.SourceMountpoints.Count == 0)
             {
-               // logger.Debug("No source mount points found");
+                logger.Trace("No source mount points found");
                 return;
             }
-
-
 
             try
             {
@@ -72,15 +70,13 @@ namespace ThreeOneThree.Proxima.Agent
                             Win32Api.USN_JOURNAL_DATA newUsnState;
                             List<Win32Api.UsnEntry> usnEntries;
                             NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
-
+                            
                             var drivePath = Path.Get(construct.DriveLetter);
                             
-                            //logger.Info("Polling for changes from " + sourceMount.CurrentUSNLocation);
+                            logger.Debug("Polling for changes from " + sourceMount.CurrentUSNLocation);
 
                             var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
-
-                            // logger.Debug("Back - "  + rtn + " // " + (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS));
-
+                            
                             if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                             {
                                 logger.Debug("USN returned with " + usnEntries.Count + " entries");
@@ -113,19 +109,18 @@ namespace ThreeOneThree.Proxima.Agent
                                     var dbEntry = new RawUSNEntry();
 
                                     dbEntry.RelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
-                                    PopulateFlags(dbEntry, entry);
 
+                                    var causedBySync = repo.Count<USNJournalSyncLog>(f =>
+                                                                                     f.Action.RelativePath == dbEntry.RelativePath &&
+                                                                                     (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) &&
+                                                                                     (f.ActionFinishDate.HasValue && entry.TimeStamp <= f.ActionFinishDate))
+                                                       > 0;
 
-                                    //if (!String.IsNullOrWhiteSpace(sourceMount.RelativePathStartFilter))
-                                    //{
-
-                                    //    if (dbEntry.RelativePath.StartsWith(sourceMount.RelativePathStartFilter) && (!dbEntry.RenameOldName.HasValue || !dbEntry.RenameOldName.Value))
-                                    //    {
-                                    //        continue;
-                                    //    }
-                                        
-                                    //}
-
+                                    if (causedBySync)
+                                    {
+                                        continue;
+                                    }
+                                    
                                     PopulateFlags(dbEntry, entry);
                                     
                                     dbEntry.Path = actualPath;
@@ -138,12 +133,10 @@ namespace ThreeOneThree.Proxima.Agent
                                     dbEntry.Mountpoint = sourceMount;
                                     dbEntry.TimeStamp = entry.TimeStamp;
                                     dbEntry.SourceInfo = entry.SourceInfo.ToString();
+
+                                    //dbEntry.CausedBySync = causedBySync;
+
                                     
-                                    dbEntry.CausedBySync = repo.Count<USNJournalSyncLog>(f =>
-                                                                                         f.Action.RelativePath == dbEntry.RelativePath &&
-                                                                                         (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) &&
-                                                                                         (f.ActionFinishDate.HasValue && entry.TimeStamp <= f.ActionFinishDate))
-                                                           > 0;
                                     if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
                                     {
                                         dbEntry.SystemFile = true;

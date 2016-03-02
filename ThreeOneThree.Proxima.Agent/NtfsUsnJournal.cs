@@ -799,6 +799,9 @@ namespace ThreeOneThree.Proxima.Agent
                     usnRtnCode = QueryUsnJournal(ref newUsnState);
                     if (usnRtnCode == UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                     {
+                        logger.Debug("First USN: " + newUsnState.FirstUsn);
+                        logger.Debug("USN ID:" + newUsnState.UsnJournalID);
+                        logger.Debug("Querying for USN ID: " + previousUsnState.UsnJournalID);
                         bool bReadMore = true;
                         //
                         // sequentially process the usn journal looking for image file entries
@@ -811,10 +814,10 @@ namespace ThreeOneThree.Proxima.Agent
                         Win32Api.READ_USN_JOURNAL_DATA rujd = new Win32Api.READ_USN_JOURNAL_DATA();
 
                         rujd.StartUsn = OverrideLastUsn > -1 ? OverrideLastUsn : previousUsnState.NextUsn;
-                        //logger.Info("Start USN = " + rujd.StartUsn);
+                        logger.Debug("Start USN = " + rujd.StartUsn);
                         rujd.ReasonMask = reasonMask;
                         rujd.ReturnOnlyOnClose =0;
-                        rujd.Timeout = 3;
+                        //rujd.Timeout = 3;
                         rujd.bytesToWaitFor = 0;
                         rujd.UsnJournalId = previousUsnState.UsnJournalID;
                         int sizeRujd = Marshal.SizeOf(rujd);
@@ -867,6 +870,7 @@ namespace ThreeOneThree.Proxima.Agent
                                 }
                                 else
                                 {
+                                    logger.Debug("Win32 Error Code: " + lastWin32Error);
                                     usnRtnCode = ConvertWin32ErrorToUsnError(lastWin32Error);
                                 }
                                 break;
@@ -1127,6 +1131,7 @@ namespace ThreeOneThree.Proxima.Agent
             if (!fOk)
             {
                 int lastWin32Error = Marshal.GetLastWin32Error();
+                logger.Debug("USN Error Code: " + lastWin32Error);
                 usnReturnCode = ConvertWin32ErrorToUsnError((Win32Api.GetLastErrorEnum)Marshal.GetLastWin32Error());
             }
 

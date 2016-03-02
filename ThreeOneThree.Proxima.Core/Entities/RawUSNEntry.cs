@@ -20,7 +20,7 @@ namespace ThreeOneThree.Proxima.Core.Entities
 
         public long USN { get; set; }
 
-        public bool CausedBySync { get; set; }
+        //public bool CausedBySync { get; set; }
 
         public DateTime TimeStamp { get; set; }
 
