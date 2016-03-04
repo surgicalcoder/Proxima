@@ -70,7 +70,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                         if (rawEntries.Count == 0)
                         {
-                            //logger.Debug("No changes found!");
+                            logger.Trace("No changes found");
                             continue;
                         }
                         logger.Trace($"{changedFiles.Count} changed files for {syncFrom.Id}");
