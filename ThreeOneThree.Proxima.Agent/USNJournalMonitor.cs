@@ -110,7 +110,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                                     dbEntry.RelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
 
-                                    // logger.Trace("[" + dbEntry.RelativePath + "] - Checking for date " + entry.TimeStamp.ToString("O")  );
+                                    logger.Trace("[" + dbEntry.RelativePath + "] - Checking for date " + entry.TimeStamp.ToString("O")  );
 
                                     var causedBySync = repo.Count<USNJournalSyncLog>(f =>
                                                                                      f.Action.RelativePath == dbEntry.RelativePath &&
@@ -166,9 +166,14 @@ namespace ThreeOneThree.Proxima.Agent
                                 repo.Add<RawUSNEntry>(entries);
                                 var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
                                 logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
-                                repo.Add<FileAction>(performRollup);
 
-                                performRollup.ForEach(f=> logger.Trace("Added " + f.Id));
+                                foreach (var fileAction in performRollup)
+                                {
+                                    logger.Trace("ADD: " + fileAction.RelativePath + ", USN:" + fileAction.USN);
+                                }
+                                //repo.Add<FileAction>(performRollup);
+
+                                //performRollup.ForEach(f=> logger.Trace("Added " + f.Id));
                             }
 
                         }
