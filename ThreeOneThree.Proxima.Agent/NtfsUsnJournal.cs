@@ -799,9 +799,9 @@ namespace ThreeOneThree.Proxima.Agent
                     usnRtnCode = QueryUsnJournal(ref newUsnState);
                     if (usnRtnCode == UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                     {
-                        logger.Debug("First USN: " + newUsnState.FirstUsn);
-                        logger.Debug("USN ID:" + newUsnState.UsnJournalID);
-                        logger.Debug("Querying for USN ID: " + previousUsnState.UsnJournalID);
+                        logger.Trace("First USN: " + newUsnState.FirstUsn);
+                        logger.Trace("USN ID:" + newUsnState.UsnJournalID);
+                        logger.Trace("Querying for USN ID: " + previousUsnState.UsnJournalID);
                         bool bReadMore = true;
                         //
                         // sequentially process the usn journal looking for image file entries
@@ -814,7 +814,7 @@ namespace ThreeOneThree.Proxima.Agent
                         Win32Api.READ_USN_JOURNAL_DATA rujd = new Win32Api.READ_USN_JOURNAL_DATA();
 
                         rujd.StartUsn = OverrideLastUsn > -1 ? OverrideLastUsn : previousUsnState.NextUsn;
-                        logger.Debug("Start USN = " + rujd.StartUsn);
+                        logger.Trace("Start USN = " + rujd.StartUsn);
                         rujd.ReasonMask = reasonMask;
                         rujd.ReturnOnlyOnClose =0;
                         //rujd.Timeout = 3;

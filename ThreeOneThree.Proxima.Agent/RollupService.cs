@@ -54,8 +54,35 @@ namespace ThreeOneThree.Proxima.Agent
             return fileActions;
         }
 
+        public class MinMax
+        {
+            public string RelativePath { get; set; }
+            public DateTime Earliest { get; set; }
+
+            public override string ToString()
+            {
+                return $"RelativePath: {RelativePath}, Earliest: {Earliest.ToString("O")}, Latest: {Latest.ToString("O")}";
+            }
+
+            public DateTime Latest { get; set; }
+        }
+
         public static List<FileAction> PerformRollup(List<RawUSNEntry> rawEntries, MonitoredMountpoint syncFrom, Repository repository)
         {
+
+
+            //foreach (var relPath in rawEntries.Select(f=>f.RelativePath).Distinct())
+            //{
+            //    MinMax max = new MinMax
+            //    {
+            //        RelativePath = relPath,
+            //        Earliest = rawEntries.Where(e => e.RelativePath == relPath).Min(f => f.TimeStamp),
+            //        Latest = rawEntries.Where(e => e.RelativePath == relPath).Max(f => f.TimeStamp)
+            //    };
+            //    logger.Trace(max.ToString());
+            //}
+
+
             var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value));
 
             if (syncFrom.IgnoreList != null && syncFrom.IgnoreList.Any())
@@ -164,6 +191,11 @@ namespace ThreeOneThree.Proxima.Agent
                     });
                 }
             }
+
+            //foreach (var fileAction in toReturn)
+            //{
+            //    rawEntries.OrderBy(f=>f.TimeStamp).FirstOrDefault(e=>e.RelativePath == fileAction.RelativePath)
+            //}
 
 
             return fileActions;

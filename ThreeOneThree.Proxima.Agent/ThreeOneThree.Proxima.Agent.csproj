@@ -86,6 +86,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConsoleCommands\AdminCommands.cs" />
+    <Compile Include="DateTimeUtils.cs" />
     <Compile Include="DriveConstruct.cs" />
     <Compile Include="JournalPathEqualityComparer.cs" />
     <Compile Include="NtfsUsnJournal.cs" />

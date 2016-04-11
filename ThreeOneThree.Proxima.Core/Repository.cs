@@ -114,8 +114,20 @@ namespace ThreeOneThree.Proxima.Core
             
             if (!mongoDatabase.GetCollection<RawUSNEntry>(GetCollectionNameForType<RawUSNEntry>("")).Indexes.List().Any())
             {
-                mongoDatabase.GetCollection<RawUSNEntry>(GetCollectionNameForType<RawUSNEntry>("")).Indexes.CreateOne(Builders<RawUSNEntry>.IndexKeys.Ascending(e => e.Mountpoint).Ascending(e => e.USN));
+                mongoDatabase.GetCollection<RawUSNEntry>(GetCollectionNameForType<RawUSNEntry>("")).Indexes.CreateOne(Builders<RawUSNEntry>.IndexKeys.Ascending(e => e.Mountpoint).Ascending(e=>e.FRN).Ascending(e => e.USN));
             }
+
+            if (!mongoDatabase.GetCollection<RawUSNEntry>(GetCollectionNameForType<FileAction>("")).Indexes.List().Any())
+            {
+                mongoDatabase.GetCollection<FileAction>(GetCollectionNameForType<FileAction>("")).Indexes.CreateOne(Builders<FileAction>.IndexKeys.Descending(e => e.USN).Descending(e => e.Mountpoint).Text(e=>e.RelativePath));
+            }
+
+            if (!mongoDatabase.GetCollection<RawUSNEntry>(GetCollectionNameForType<USNJournalSyncLog>("")).Indexes.List().Any())
+            {
+                mongoDatabase.GetCollection<USNJournalSyncLog>(GetCollectionNameForType<FileAction>("")).Indexes.CreateOne(Builders<USNJournalSyncLog>.IndexKeys.Ascending(e => e.Action.RelativePath).Descending(e => e.ActionStartDate).Descending(e => e.ActionFinishDate));
+            }
+
+
 
             InitRun = true;
             InitLastChecked = DateTime.Now;
@@ -216,7 +228,7 @@ namespace ThreeOneThree.Proxima.Core
         public long Count<T>(Expression<Func<T, bool>> predicate, string OverrideCollectionName = "") where T : MongoEntity
         {
             var mongoCollection = mongoDatabase.GetCollection<T>(GetCollectionNameForType<T>(OverrideCollectionName));
-
+            
             return mongoCollection.Count(predicate);
 
         }

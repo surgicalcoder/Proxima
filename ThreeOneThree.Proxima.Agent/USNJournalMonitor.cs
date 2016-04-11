@@ -110,10 +110,12 @@ namespace ThreeOneThree.Proxima.Agent
 
                                     dbEntry.RelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
 
+                                    // logger.Trace("[" + dbEntry.RelativePath + "] - Checking for date " + entry.TimeStamp.ToString("O")  );
+
                                     var causedBySync = repo.Count<USNJournalSyncLog>(f =>
                                                                                      f.Action.RelativePath == dbEntry.RelativePath &&
-                                                                                     (f.ActionStartDate.HasValue && entry.TimeStamp >= f.ActionStartDate) &&
-                                                                                     (f.ActionFinishDate.HasValue && entry.TimeStamp <= f.ActionFinishDate))
+                                                                                     (f.ActionStartDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) >= f.ActionStartDate) &&
+                                                                                     (f.ActionFinishDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) <= f.ActionFinishDate))
                                                        > 0;
 
                                     if (causedBySync)
@@ -131,7 +133,7 @@ namespace ThreeOneThree.Proxima.Agent
                                     dbEntry.RecordLength = entry.RecordLength;
                                     dbEntry.USN = entry.USN;
                                     dbEntry.Mountpoint = sourceMount;
-                                    dbEntry.TimeStamp = entry.TimeStamp;
+                                    dbEntry.TimeStamp = entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond);
                                     dbEntry.SourceInfo = entry.SourceInfo.ToString();
 
                                     //dbEntry.CausedBySync = causedBySync;
@@ -165,6 +167,8 @@ namespace ThreeOneThree.Proxima.Agent
                                 var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
                                 logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
                                 repo.Add<FileAction>(performRollup);
+
+                                performRollup.ForEach(f=> logger.Trace("Added " + f.Id));
                             }
 
                         }
