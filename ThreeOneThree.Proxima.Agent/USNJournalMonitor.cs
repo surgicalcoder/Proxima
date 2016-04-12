@@ -129,7 +129,7 @@ namespace ThreeOneThree.Proxima.Agent
                                 logger.Trace("[" + dbEntry.RelativePath + "] - Checking for date " + entry.TimeStamp.ToString("O")  );
 
                                 var causedBySync = repo.Count<USNJournalSyncLog>(f =>
-                                                                                    f.Action.RelativePath == dbEntry.RelativePath &&
+                                                                                    f.Action.RelativePath == dbEntry.RelativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
                                                                                     (f.ActionStartDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) >= f.ActionStartDate) &&
                                                                                     (f.ActionFinishDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) <= f.ActionFinishDate))
                                                     > 0;
