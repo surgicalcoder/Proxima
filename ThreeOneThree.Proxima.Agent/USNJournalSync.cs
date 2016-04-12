@@ -162,7 +162,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                     var path = Path.Get(syncFrom.Path, syncLog.Action.RelativePath);
 
-                    logger.Info("[{syncLog.Id}] [D] " + path);
+                    logger.Info($"[{syncLog.Id}] [D] " + path);
                     
                     if (path.Exists)
                     {

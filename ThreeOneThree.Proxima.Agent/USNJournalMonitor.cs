@@ -43,6 +43,13 @@ namespace ThreeOneThree.Proxima.Agent
             Win32Api.USN_REASON_CLOSE;
 
 
+        //private class USNMinMax
+        //{
+        //    public ulong FRN { get; set; }
+        //    public DateTime Min { get; set; }
+        //    public DateTime Max { get; set; }
+        //}
+
         public void Execute(IJobExecutionContext context)
         {
             logger.Trace("USNJournalMonitor Execution");
@@ -57,129 +64,159 @@ namespace ThreeOneThree.Proxima.Agent
                 using (Repository repo = new Repository())
                 {
 
+                    
+
+
+                    foreach (var sourceMount in Singleton.Instance.SourceMountpoints)
                     {
 
+                        List<RawUSNEntry> entries = new List<RawUSNEntry>();
 
-                        foreach (var sourceMount in Singleton.Instance.SourceMountpoints)
+                        
+
+                        var construct = new DriveConstruct(sourceMount.MountPoint);
+                        Win32Api.USN_JOURNAL_DATA newUsnState;
+                        List<Win32Api.UsnEntry> usnEntries;
+                        NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
+                            
+                        var drivePath = Path.Get(construct.DriveLetter);
+                            
+                        logger.Debug("Polling for changes from " + sourceMount.CurrentUSNLocation);
+
+                        var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
+                            
+                        if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                         {
 
-                            List<RawUSNEntry> entries = new List<RawUSNEntry>();
 
 
-                            var construct = new DriveConstruct(sourceMount.MountPoint);
-                            Win32Api.USN_JOURNAL_DATA newUsnState;
-                            List<Win32Api.UsnEntry> usnEntries;
-                            NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
-                            
-                            var drivePath = Path.Get(construct.DriveLetter);
-                            
-                            logger.Debug("Polling for changes from " + sourceMount.CurrentUSNLocation);
+                            logger.Debug("USN returned with " + usnEntries.Count + " entries");
 
-                            var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
-                            
-                            if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
+                            List<ulong> FRNCausedBySync = new List<ulong>();
+
+                            //MinMax = usnEntries.Select(f => f.FileReferenceNumber).Distinct().ToDictionary(frn => frn, frn => new Tuple<DateTime, DateTime>(usnEntries.Where(e => e.FileReferenceNumber == frn).Min(a => a.TimeStamp), usnEntries.Where(e => e.FileReferenceNumber == frn).Max(a => a.TimeStamp)));
+
+                            foreach (var entry in usnEntries)
                             {
-                                logger.Debug("USN returned with " + usnEntries.Count + " entries");
-                                foreach (var entry in usnEntries)
+                                string rawPath;
+                                string actualPath;
+
+                                if (entry.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement || entry.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement)
                                 {
-                                    string rawPath;
-                                    string actualPath;
-
-                                    if (entry.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement || entry.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement)
-                                    {
-                                        continue;
-                                    }
-
-                                    var usnRtnCode = journal.GetPathFromFileReference(entry.ParentFileReferenceNumber, out rawPath);
-
-                                    if (usnRtnCode == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS && 0 != String.Compare(rawPath, "Unavailable", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        actualPath = $"{journal.MountPoint.TrimEnd('\\')}{rawPath.TrimEnd('\\')}\\{entry.Name}";
-                                    }
-                                    else
-                                    {
-                                        continue;
-                                    }
-
-                                    if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant())) // || actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
-                                    {
-                                        continue;
-                                    }
-
-                                    var dbEntry = new RawUSNEntry();
-
-                                    dbEntry.RelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
-
-                                    logger.Trace("[" + dbEntry.RelativePath + "] - Checking for date " + entry.TimeStamp.ToString("O")  );
-
-                                    var causedBySync = repo.Count<USNJournalSyncLog>(f =>
-                                                                                     f.Action.RelativePath == dbEntry.RelativePath &&
-                                                                                     (f.ActionStartDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) >= f.ActionStartDate) &&
-                                                                                     (f.ActionFinishDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) <= f.ActionFinishDate))
-                                                       > 0;
-
-                                    if (causedBySync)
-                                    {
-                                        continue;
-                                    }
-                                    
-                                    PopulateFlags(dbEntry, entry);
-                                    
-                                    dbEntry.Path = actualPath;
-                                    dbEntry.File = entry.IsFile;
-                                    dbEntry.Directory = entry.IsFolder;
-                                    dbEntry.FRN = entry.FileReferenceNumber;
-                                    dbEntry.PFRN = entry.ParentFileReferenceNumber;
-                                    dbEntry.RecordLength = entry.RecordLength;
-                                    dbEntry.USN = entry.USN;
-                                    dbEntry.Mountpoint = sourceMount;
-                                    dbEntry.TimeStamp = entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond);
-                                    dbEntry.SourceInfo = entry.SourceInfo.ToString();
-
-                                    //dbEntry.CausedBySync = causedBySync;
-
-                                    
-                                    if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
-                                    {
-                                        dbEntry.SystemFile = true;
-                                    }
-
-
-                                    entries.Add(dbEntry);
+                                    continue;
                                 }
 
-                                construct.CurrentJournalData = newUsnState;
-                                sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
-                                sourceMount.Volume = construct.Volume;
+                                var usnRtnCode = journal.GetPathFromFileReference(entry.ParentFileReferenceNumber, out rawPath);
 
-                                repo.Update(sourceMount);
-
-                            }
-                            else
-                            {
-                                logger.Error("Error on Monitor - " + rtn.ToString());
-                                throw new UsnJournalException(rtn);
-                            }
-
-                            if (entries.Any())
-                            {
-                                repo.Add<RawUSNEntry>(entries);
-                                var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
-                                logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
-
-                                foreach (var fileAction in performRollup)
+                                if (usnRtnCode == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS && 0 != String.Compare(rawPath, "Unavailable", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    logger.Trace("ADD: " + fileAction.RelativePath + ", USN:" + fileAction.USN);
+                                    actualPath = $"{journal.MountPoint.TrimEnd('\\')}{rawPath.TrimEnd('\\')}\\{entry.Name}";
                                 }
-                                //repo.Add<FileAction>(performRollup);
+                                else
+                                {
+                                    continue;
+                                }
 
-                                //performRollup.ForEach(f=> logger.Trace("Added " + f.Id));
+                                if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant())) // || actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+                                {
+                                    continue;
+                                }
+
+                                var dbEntry = new RawUSNEntry();
+
+                                dbEntry.RelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
+
+                                logger.Trace("[" + dbEntry.RelativePath + "] - Checking for date " + entry.TimeStamp.ToString("O")  );
+
+                                var causedBySync = repo.Count<USNJournalSyncLog>(f =>
+                                                                                    f.Action.RelativePath == dbEntry.RelativePath &&
+                                                                                    (f.ActionStartDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) >= f.ActionStartDate) &&
+                                                                                    (f.ActionFinishDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) <= f.ActionFinishDate))
+                                                    > 0;
+
+                                if (causedBySync || FRNCausedBySync.Contains(entry.FileReferenceNumber))
+                                {
+                                    if (!FRNCausedBySync.Contains(entry.FileReferenceNumber))
+                                    {
+                                        FRNCausedBySync.Add(entry.FileReferenceNumber);
+                                    }
+                                    continue;
+                                }
+
+
+
+
+                                PopulateFlags(dbEntry, entry);
+                                    
+                                dbEntry.Path = actualPath;
+                                dbEntry.File = entry.IsFile;
+                                dbEntry.Directory = entry.IsFolder;
+                                dbEntry.FRN = entry.FileReferenceNumber;
+                                dbEntry.PFRN = entry.ParentFileReferenceNumber;
+                                dbEntry.RecordLength = entry.RecordLength;
+                                dbEntry.USN = entry.USN;
+                                dbEntry.Mountpoint = sourceMount;
+                                dbEntry.TimeStamp = entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond);
+                                dbEntry.SourceInfo = entry.SourceInfo.ToString();
+                                    
+                                if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+                                {
+                                    dbEntry.SystemFile = true;
+                                }
+
+
+                                entries.Add(dbEntry);
                             }
+
+
+                            entries.RemoveAll(f =>
+                            {
+                                if (f.File.HasValue && f.File.Value)
+                                {
+                                    return false;
+                                }
+
+                                if (usnEntries.Where(a => a.ParentFileReferenceNumber == f.FRN).Select(e => e.FileReferenceNumber).Distinct().All(e => FRNCausedBySync.Contains(e)))
+                                {
+                                    logger.Trace("REMOVE: " + f.RelativePath);
+                                    return true;
+                                }
+                                return false;
+                                
+                            });
+
+                            construct.CurrentJournalData = newUsnState;
+                            sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
+                            sourceMount.Volume = construct.Volume;
+
+                            repo.Update(sourceMount);
 
                         }
+                        else
+                        {
+                            logger.Error("Error on Monitor - " + rtn.ToString());
+                            throw new UsnJournalException(rtn);
+                        }
 
+                        if (entries.Any())
+                        {
+                            repo.Add<RawUSNEntry>(entries);
+                            var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
+                            logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
+
+                            foreach (var fileAction in performRollup)
+                            {
+                                logger.Trace("ADD: " + fileAction.RelativePath + ", USN:" + fileAction.USN);
+                            }
+                            repo.Add<FileAction>(performRollup);
+
+                            performRollup.ForEach(f=> logger.Debug("Added " + f.Id));
+                        }
 
                     }
+
+
+                    
                 }
             }
                  
