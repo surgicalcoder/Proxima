@@ -7,6 +7,9 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public MongoRef<MonitoredMountpoint> Mountpoint { get; set; }
         public string Path { get; set; }
 
+        public string RenameFromPath { get; set; }
+        public string RenameFromRelativePath { get; set; }
+
         public string RelativePath { get; set; }
         public string SourceInfo { get; set; }
         public bool? File { get; set; }
@@ -47,5 +50,26 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public bool? Close { get; set; }
 
         public bool? SystemFile{ get; set; }
+        public USNChangeRange ChangeRange { get; set; }
     }
+
+    public class USNChangeRange
+    {
+        public ulong FRN { get; set; }
+
+        public DateTime Min { get; set; }
+        public DateTime Max { get; set; }
+
+        public bool Closed { get; set; }
+
+        public dynamic Entry { get; set; }
+
+        public dynamic RenameFrom { get; set; }
+    }
+
+    public class Win32ApiEntry
+    {
+        
+    }
+
 }

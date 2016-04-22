@@ -14,7 +14,6 @@ using Path = Fluent.IO.Path;
 
 namespace ThreeOneThree.Proxima.Agent
 {
-   // [PersistJobDataAfterExecution]
     [DisallowConcurrentExecution]
     public class USNJournalMonitor : IJob
     {
@@ -41,21 +40,12 @@ namespace ThreeOneThree.Proxima.Agent
             //Win32Api.USN_REASON_REPARSE_POINT_CHANGE |
             //Win32Api.USN_REASON_STREAM_CHANGE |
             Win32Api.USN_REASON_CLOSE;
-
-
-        //private class USNMinMax
-        //{
-        //    public ulong FRN { get; set; }
-        //    public DateTime Min { get; set; }
-        //    public DateTime Max { get; set; }
-        //}
+        
 
         public void Execute(IJobExecutionContext context)
         {
-            logger.Trace("USNJournalMonitor Execution");
             if (Singleton.Instance.SourceMountpoints == null || Singleton.Instance.SourceMountpoints.Count == 0)
             {
-                logger.Trace("No source mount points found");
                 return;
             }
 
@@ -88,45 +78,94 @@ namespace ThreeOneThree.Proxima.Agent
                         if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                         {
 
-
-
                             logger.Debug("USN returned with " + usnEntries.Count + " entries");
 
-                            List<ulong> FRNCausedBySync = new List<ulong>();
+                            List<USNChangeRange> changeRange = new List<USNChangeRange>();
 
-                            //MinMax = usnEntries.Select(f => f.FileReferenceNumber).Distinct().ToDictionary(frn => frn, frn => new Tuple<DateTime, DateTime>(usnEntries.Where(e => e.FileReferenceNumber == frn).Min(a => a.TimeStamp), usnEntries.Where(e => e.FileReferenceNumber == frn).Max(a => a.TimeStamp)));
-
-                            foreach (var entry in usnEntries)
+                            foreach (var frn in usnEntries.Where(e=> e.SourceInfo != Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement && e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement).Select(e=>e.FileReferenceNumber).Distinct())
                             {
-                                string rawPath;
-                                string actualPath;
-
-                                if (entry.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement || entry.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement)
+                                var entriesForFile = usnEntries.Where(f => f.FileReferenceNumber == frn).ToList();
+                                
+                                USNChangeRange range = new USNChangeRange
                                 {
-                                    continue;
-                                }
+                                    FRN = frn,
+                                    Min = entriesForFile.Min(e => e.TimeStamp),
+                                    Max = entriesForFile.Max(e => e.TimeStamp),
+                                    Closed = (entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault().Reason & Win32Api.USN_REASON_CLOSE) != 0,
+                                    RenameFrom = entriesForFile.FirstOrDefault(e => (e.Reason & Win32Api.USN_REASON_RENAME_OLD_NAME) != 0),
+                                    Entry = entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault()
+                                };
 
-                                var usnRtnCode = journal.GetPathFromFileReference(entry.ParentFileReferenceNumber, out rawPath);
+                                changeRange.Add(range);
+                            }
 
-                                if (usnRtnCode == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS && 0 != String.Compare(rawPath, "Unavailable", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    actualPath = $"{journal.MountPoint.TrimEnd('\\')}{rawPath.TrimEnd('\\')}\\{entry.Name}";
-                                }
-                                else
-                                {
-                                    continue;
-                                }
+                            foreach (var item in changeRange)
+                            {
+                                
+                                var actualPath = GetActualPath(journal, item);
 
-                                if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant())) // || actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+                                var relativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
+
+                                // Check for Sync.
+
+
+                                repo.Count<USNJournalSyncLog>(f =>
                                 {
-                                    continue;
-                                }
+                                    f.Action.RelativePath == relativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
+
+
+                                    ( f.ActionStartDate.HasValue &&   f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond)   )
+
+                                })
+
+
+                                var causedBySync = repo.Count<USNJournalSyncLog>(f =>
+                                                                                    f.Action.RelativePath == dbEntry.RelativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
+                                                                                    (f.ActionStartDate.HasValue && item.Min.Truncate(TimeSpan.TicksPerMillisecond) >= f.ActionStartDate) &&
+                                                                                    (f.ActionFinishDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) <= f.ActionFinishDate))
+
+
+
+
 
                                 var dbEntry = new RawUSNEntry();
 
-                                dbEntry.RelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
+                                PopulateFlags(dbEntry, item.Entry);
+
+                                dbEntry.Path = actualPath;
+                                dbEntry.RelativePath = relativePath;
+                                dbEntry.File = item.Entry.IsFile;
+                                dbEntry.Directory = item.Entry.IsFolder;
+                                dbEntry.FRN = item.Entry.FileReferenceNumber;
+                                dbEntry.PFRN = item.Entry.ParentFileReferenceNumber;
+                                dbEntry.RecordLength = item.Entry.RecordLength;
+                                dbEntry.USN = item.Entry.USN;
+                                dbEntry.Mountpoint = sourceMount;
+                                dbEntry.TimeStamp = item.Entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond);
+                                dbEntry.SourceInfo = item.Entry.SourceInfo.ToString();
+                                dbEntry.ChangeRange = item;
+                                
+                                if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+                                {
+                                    dbEntry.SystemFile = true;
+                                }
+
+
+                                if (item.RenameFrom != null)
+                                {
+                                    dbEntry.RenameFromPath = GetActualPath(journal, ((Win32Api.UsnEntry) item.RenameFrom));
+                                    dbEntry.RenameFromRelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(dbEntry.RenameFromPath, "", 1);
+                                }
+
+
+                            }
+
+                       /*     foreach (var entry in usnEntries)
+                            {
 
                                 
+
+                                var dbEntry = new RawUSNEntry();
 
                                 var causedBySync = repo.Count<USNJournalSyncLog>(f =>
                                                                                     f.Action.RelativePath == dbEntry.RelativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
@@ -169,23 +208,23 @@ namespace ThreeOneThree.Proxima.Agent
 
                                 entries.Add(dbEntry);
                             }
+                            */
 
+                            //entries.RemoveAll(f =>
+                            //{
+                            //    if (f.File.HasValue && f.File.Value)
+                            //    {
+                            //        return false;
+                            //    }
 
-                            entries.RemoveAll(f =>
-                            {
-                                if (f.File.HasValue && f.File.Value)
-                                {
-                                    return false;
-                                }
-
-                                if (usnEntries.Where(a => a.ParentFileReferenceNumber == f.FRN).Select(e => e.FileReferenceNumber).Distinct().All(e => FRNCausedBySync.Contains(e)))
-                                {
-                                    logger.Trace("REMOVE: " + f.RelativePath);
-                                    return true;
-                                }
-                                return false;
+                            //    if (usnEntries.Where(a => a.ParentFileReferenceNumber == f.FRN).Select(e => e.FileReferenceNumber).Distinct().All(e => FRNCausedBySync.Contains(e)))
+                            //    {
+                            //        logger.Trace("REMOVE: " + f.RelativePath);
+                            //        return true;
+                            //    }
+                            //    return false;
                                 
-                            });
+                            //});
 
                             construct.CurrentJournalData = newUsnState;
                             sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
@@ -227,6 +266,28 @@ namespace ThreeOneThree.Proxima.Agent
                     logger.Error(e, "Error in USNJournalMonitor");
                 }
 }
+
+        private static string GetActualPath(NtfsUsnJournal journal, Win32Api.UsnEntry item)
+        {
+            string actualPath = null;
+
+            string rawPath;
+            var usnRtnCode = journal.GetPathFromFileReference(item.ParentFileReferenceNumber, out rawPath);
+
+            if (usnRtnCode == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS && 0 != String.Compare(rawPath, "Unavailable", StringComparison.OrdinalIgnoreCase))
+            {
+                actualPath = $"{journal.MountPoint.TrimEnd('\\')}{rawPath.TrimEnd('\\')}\\{item.Name}";
+            }
+            else
+            {
+                return actualPath;
+            }
+            if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant())) // || actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+            {
+                return actualPath;
+            }
+            return actualPath;
+        }
 
         private string GetRemotePath(string actualPath)
         {
