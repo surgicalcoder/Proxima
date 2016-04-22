@@ -126,13 +126,15 @@ namespace ThreeOneThree.Proxima.Agent
 
                                 dbEntry.RelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
 
-                                logger.Trace("[" + dbEntry.RelativePath + "] - Checking for date " + entry.TimeStamp.ToString("O")  );
+                                
 
                                 var causedBySync = repo.Count<USNJournalSyncLog>(f =>
                                                                                     f.Action.RelativePath == dbEntry.RelativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
                                                                                     (f.ActionStartDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) >= f.ActionStartDate) &&
                                                                                     (f.ActionFinishDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) <= f.ActionFinishDate))
                                                     > 0;
+
+                                logger.Trace("[{0}] - Checking for date {1} - Is Sync? {2}", dbEntry.RelativePath, entry.TimeStamp.ToString("O"), causedBySync);
 
                                 if (causedBySync || FRNCausedBySync.Contains(entry.FileReferenceNumber))
                                 {
