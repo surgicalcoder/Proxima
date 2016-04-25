@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 
-namespace ThreeOneThree.Proxima.Agent
+namespace ThreeOneThree.Proxima.Core
 {
     public class Win32Api
     {
@@ -602,74 +602,61 @@ namespace ThreeOneThree.Proxima.Agent
                 ReplicationManagement = 0x00000004
             }
 
-            private UInt32 _recordLength;
-            public UInt32 RecordLength
-            {
-                get { return _recordLength; }
-            }
+            //private UInt32 _recordLength;
+            public UInt32 RecordLength { get; set; }
 
-            private DateTime _timeStamp;
+            //private DateTime _timeStamp;
 
-            public DateTime TimeStamp => _timeStamp;
+            public DateTime TimeStamp { get; set; }
 
-            private Int64 _usn;
-            public Int64 USN
-            {
-                get { return _usn; }
-            }
+            public Int64 USN { get; set; }
 
-            private UInt64 _sourceInfo;
+            //private Int64 _usn;
+            //public Int64 USN
+            //{
+            //    get { return _usn; }
+            //}
+
+            //private UInt64 _sourceInfo;
+
+            public UInt64 SourceInfoRaw { get; set; }
 
             public USNJournalSourceInfo SourceInfo
             {
                 get
                 {
-                    return (USNJournalSourceInfo) _sourceInfo;
+                    return (USNJournalSourceInfo)SourceInfoRaw;
                 }
             }
 
-            private UInt64 _frn;
-            public UInt64 FileReferenceNumber
-            {
-                get { return _frn; }
-            }
+            
+            public UInt64 FileReferenceNumber { get; set; }
 
-            private UInt64 _pfrn;
-            public UInt64 ParentFileReferenceNumber
-            {
-                get { return _pfrn; }
-            }
+            public UInt64 ParentFileReferenceNumber { get; set; }
 
-            private UInt32 _reason;
-            public UInt32 Reason
-            {
-                get { return _reason; }
-            }
+            public Int64 ReasonRaw { get; set; }
 
-            private string _name;
-            public string Name
-            {
-                get
-                {
-                    return _name;
-                }
-            }
+            public UInt32 Reason{ get { return (uint) ReasonRaw; } }
 
-            private string _oldName;
+            public string Name{ get; set; }
+
+            public string OldNameRaw { get; set; }
+
+            
             public string OldName
             {
                 get
                 {
                     if (0 != (_fileAttributes & USN_REASON_RENAME_OLD_NAME))
                     {
-                        return _oldName;
+                        return OldNameRaw;
                     }
                     else
                     {
                         return null;
                     }
                 }
-                set { _oldName = value; }
+                set { OldNameRaw = value; }
             }
 
             private UInt32 _fileAttributes;
@@ -705,21 +692,21 @@ namespace ThreeOneThree.Proxima.Agent
             /// <param name="p">Buffer pointer to first byte of the USN Record</param>
             public UsnEntry(IntPtr ptrToUsnRecord)
             {
-                _recordLength = (UInt32)Marshal.ReadInt32(ptrToUsnRecord);
-                _frn = (UInt64)Marshal.ReadInt64(ptrToUsnRecord, FR_OFFSET);
-                _pfrn = (UInt64)Marshal.ReadInt64(ptrToUsnRecord, PFR_OFFSET);
-                _usn = (Int64)Marshal.ReadInt64(ptrToUsnRecord, USN_OFFSET);
-                _reason = (UInt32)Marshal.ReadInt32(ptrToUsnRecord, REASON_OFFSET);
+                RecordLength = (UInt32)Marshal.ReadInt32(ptrToUsnRecord);
+                FileReferenceNumber = (UInt64)Marshal.ReadInt64(ptrToUsnRecord, FR_OFFSET);
+                ParentFileReferenceNumber = (UInt64)Marshal.ReadInt64(ptrToUsnRecord, PFR_OFFSET);
+                USN = (Int64)Marshal.ReadInt64(ptrToUsnRecord, USN_OFFSET);
+                ReasonRaw = (UInt32)Marshal.ReadInt32(ptrToUsnRecord, REASON_OFFSET);
                 _fileAttributes = (UInt32)Marshal.ReadInt32(ptrToUsnRecord, FA_OFFSET);
-                _sourceInfo = (UInt32) Marshal.ReadInt32(ptrToUsnRecord, SOURCEINFO_OFFSET);
+                SourceInfoRaw = (UInt32) Marshal.ReadInt32(ptrToUsnRecord, SOURCEINFO_OFFSET);
                 //FILETIME blarg;
 
-                _timeStamp = DateTime.FromFileTimeUtc((Int64) Marshal.ReadInt64(ptrToUsnRecord, TIME_OFFSET));
+                TimeStamp = DateTime.FromFileTimeUtc((Int64) Marshal.ReadInt64(ptrToUsnRecord, TIME_OFFSET));
 
                 // TIME_OFFSET
                 short fileNameLength = Marshal.ReadInt16(ptrToUsnRecord, FNL_OFFSET);
                 short fileNameOffset = Marshal.ReadInt16(ptrToUsnRecord, FN_OFFSET);
-                _name = Marshal.PtrToStringUni(new IntPtr(ptrToUsnRecord.ToInt32() + fileNameOffset), fileNameLength / sizeof(char));
+                Name = Marshal.PtrToStringUni(new IntPtr(ptrToUsnRecord.ToInt32() + fileNameOffset), fileNameLength / sizeof(char));
             }
 
 
@@ -732,6 +719,8 @@ namespace ThreeOneThree.Proxima.Agent
             }
 
             #endregion
+
+
         }
 
         /// <summary>

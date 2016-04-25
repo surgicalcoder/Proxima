@@ -60,7 +60,7 @@ namespace ThreeOneThree.Proxima.Agent
                     foreach (var sourceMount in Singleton.Instance.SourceMountpoints)
                     {
 
-                        List<RawUSNEntry> entries = new List<RawUSNEntry>();
+                        
 
                         
 
@@ -77,21 +77,29 @@ namespace ThreeOneThree.Proxima.Agent
                             
                         if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                         {
-
+                            List<RawUSNEntry> entries = new List<RawUSNEntry>();
                             logger.Debug("USN returned with " + usnEntries.Count + " entries");
 
                             List<USNChangeRange> changeRange = new List<USNChangeRange>();
 
-                            foreach (var frn in usnEntries.Where(e=> e.SourceInfo != Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement && e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement).Select(e=>e.FileReferenceNumber).Distinct())
+                            foreach (var frn in usnEntries/*.Where(e=> e.SourceInfo != Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement && e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement)*/.Select(e=>e.FileReferenceNumber).Distinct())
                             {
-                                var entriesForFile = usnEntries.Where(f => f.FileReferenceNumber == frn).ToList();
                                 
+
+                                var entriesForFile = usnEntries.Where(f => f.FileReferenceNumber == frn).ToList();
+
+                                if (entriesForFile.All(e => e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement || e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement))
+                                {
+                                    continue;
+                                }
+                                
+                              //  logger.Trace("FRN: " + frn);
                                 USNChangeRange range = new USNChangeRange
                                 {
                                     FRN = frn,
                                     Min = entriesForFile.Min(e => e.TimeStamp),
                                     Max = entriesForFile.Max(e => e.TimeStamp),
-                                    Closed = (entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault().Reason & Win32Api.USN_REASON_CLOSE) != 0,
+                                    Closed = entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault() != null ? (entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault().Reason & Win32Api.USN_REASON_CLOSE) != 0 : false,
                                     RenameFrom = entriesForFile.FirstOrDefault(e => (e.Reason & Win32Api.USN_REASON_RENAME_OLD_NAME) != 0),
                                     Entry = entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault()
                                 };
@@ -99,33 +107,79 @@ namespace ThreeOneThree.Proxima.Agent
                                 changeRange.Add(range);
                             }
 
+                            logger.Trace("ChangeRange : " + changeRange.Count);
+
+
+                            //changeRange.RemoveAll(range =>
+                            //{
+
+                            //    if (!range.Closed)
+                            //    {
+                            //        //OpenChangeRange open = new OpenChangeRange();
+                            //        //open.ChangeRange = range;
+                            //        //repo.Add(open);
+                            //        logger.Trace("Ditching " + ((Win32Api.UsnEntry) range.Entry).Name + " because it's not closed" );
+                            //        return true;
+                            //    }
+
+                            //    return false;
+                            //});
+
+
                             foreach (var item in changeRange)
                             {
                                 
-                                var actualPath = GetActualPath(journal, item);
+                                var actualPath = GetActualPath(journal, item.Entry as Win32Api.UsnEntry );
 
-                                var relativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
-
-                                // Check for Sync.
-
-
-                                repo.Count<USNJournalSyncLog>(f =>
+                                if (actualPath == "Unavailable")
                                 {
+                                    continue;
+                                }
+
+                                string relativePath;
+                                try
+                                {
+                                    
+                                    relativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
+                                }
+                                catch (Exception e)
+                                {
+                                    relativePath = "#ERROR#";
+                                }
+
+                                var count = repo.Count<USNJournalSyncLog>(f =>
+                                
                                     f.Action.RelativePath == relativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
 
 
-                                    ( f.ActionStartDate.HasValue &&   f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond)   )
+                                    (f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                    &&
+                                    (f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
 
-                                })
+                                    ||
 
+                                    (f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                    &&
+                                    (f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
 
-                                var causedBySync = repo.Count<USNJournalSyncLog>(f =>
-                                                                                    f.Action.RelativePath == dbEntry.RelativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
-                                                                                    (f.ActionStartDate.HasValue && item.Min.Truncate(TimeSpan.TicksPerMillisecond) >= f.ActionStartDate) &&
-                                                                                    (f.ActionFinishDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) <= f.ActionFinishDate))
+                                    ||
 
+                                    (f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                    &&
+                                    (f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
 
+                                    ||
 
+                                    (f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                    &&
+                                    (f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
+
+                                );
+                                
+                                if (count > 0)
+                                {
+                                    continue;
+                                }
 
 
                                 var dbEntry = new RawUSNEntry();
@@ -141,11 +195,12 @@ namespace ThreeOneThree.Proxima.Agent
                                 dbEntry.RecordLength = item.Entry.RecordLength;
                                 dbEntry.USN = item.Entry.USN;
                                 dbEntry.Mountpoint = sourceMount;
+                                
                                 dbEntry.TimeStamp = item.Entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond);
                                 dbEntry.SourceInfo = item.Entry.SourceInfo.ToString();
                                 dbEntry.ChangeRange = item;
                                 
-                                if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+                                if ( actualPath != null && actualPath != "Unavailable" && actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
                                 {
                                     dbEntry.SystemFile = true;
                                 }
@@ -154,77 +209,31 @@ namespace ThreeOneThree.Proxima.Agent
                                 if (item.RenameFrom != null)
                                 {
                                     dbEntry.RenameFromPath = GetActualPath(journal, ((Win32Api.UsnEntry) item.RenameFrom));
-                                    dbEntry.RenameFromRelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(dbEntry.RenameFromPath, "", 1);
-                                }
-
-
-                            }
-
-                       /*     foreach (var entry in usnEntries)
-                            {
-
-                                
-
-                                var dbEntry = new RawUSNEntry();
-
-                                var causedBySync = repo.Count<USNJournalSyncLog>(f =>
-                                                                                    f.Action.RelativePath == dbEntry.RelativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
-                                                                                    (f.ActionStartDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) >= f.ActionStartDate) &&
-                                                                                    (f.ActionFinishDate.HasValue && entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond) <= f.ActionFinishDate))
-                                                    > 0;
-
-                                logger.Trace("[{0}] - Checking for date {1} - Is Sync? {2}", dbEntry.RelativePath, entry.TimeStamp.ToString("O"), causedBySync);
-
-                                if (causedBySync || FRNCausedBySync.Contains(entry.FileReferenceNumber))
-                                {
-                                    if (!FRNCausedBySync.Contains(entry.FileReferenceNumber))
+                                    if (!string.IsNullOrWhiteSpace(dbEntry.RenameFromPath ) && dbEntry.RenameFromPath != "Unavailable")
                                     {
-                                        FRNCausedBySync.Add(entry.FileReferenceNumber);
+                                        dbEntry.RenameFromRelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(dbEntry.RenameFromPath, "", 1);
                                     }
-                                    continue;
                                 }
-
-
-
-
-                                PopulateFlags(dbEntry, entry);
-                                    
-                                dbEntry.Path = actualPath;
-                                dbEntry.File = entry.IsFile;
-                                dbEntry.Directory = entry.IsFolder;
-                                dbEntry.FRN = entry.FileReferenceNumber;
-                                dbEntry.PFRN = entry.ParentFileReferenceNumber;
-                                dbEntry.RecordLength = entry.RecordLength;
-                                dbEntry.USN = entry.USN;
-                                dbEntry.Mountpoint = sourceMount;
-                                dbEntry.TimeStamp = entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond);
-                                dbEntry.SourceInfo = entry.SourceInfo.ToString();
-                                    
-                                if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
-                                {
-                                    dbEntry.SystemFile = true;
-                                }
-
 
                                 entries.Add(dbEntry);
                             }
-                            */
 
-                            //entries.RemoveAll(f =>
-                            //{
-                            //    if (f.File.HasValue && f.File.Value)
-                            //    {
-                            //        return false;
-                            //    }
 
-                            //    if (usnEntries.Where(a => a.ParentFileReferenceNumber == f.FRN).Select(e => e.FileReferenceNumber).Distinct().All(e => FRNCausedBySync.Contains(e)))
-                            //    {
-                            //        logger.Trace("REMOVE: " + f.RelativePath);
-                            //        return true;
-                            //    }
-                            //    return false;
-                                
-                            //});
+                            if (changeRange.Any())
+                            {
+                                repo.Add<USNChangeRange>(changeRange);
+                                repo.Add<RawUSNEntry>(entries);
+
+                                var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
+                                logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
+                                foreach (var fileAction in performRollup)
+                                {
+                                  //  logger.Trace("ADD: " + fileAction.RelativePath + ", USN:" + fileAction.USN);
+                                }
+                                repo.Add<FileAction>(performRollup);
+
+                                performRollup.ForEach(f=> logger.Debug("Added " + f.Id));
+                            }
 
                             construct.CurrentJournalData = newUsnState;
                             sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
@@ -239,20 +248,22 @@ namespace ThreeOneThree.Proxima.Agent
                             throw new UsnJournalException(rtn);
                         }
 
-                        if (entries.Any())
-                        {
-                            repo.Add<RawUSNEntry>(entries);
-                            var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
-                            logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
+                        //if (entries.Any())
+                        //{
+                        //    //repo.Add<RawUSNEntry>(entries);
 
-                            foreach (var fileAction in performRollup)
-                            {
-                                logger.Trace("ADD: " + fileAction.RelativePath + ", USN:" + fileAction.USN);
-                            }
-                            repo.Add<FileAction>(performRollup);
+                            
+                        //    //var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
+                        //    //logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
 
-                            performRollup.ForEach(f=> logger.Debug("Added " + f.Id));
-                        }
+                        //    //foreach (var fileAction in performRollup)
+                        //    //{
+                        //    //    logger.Trace("ADD: " + fileAction.RelativePath + ", USN:" + fileAction.USN);
+                        //    //}
+                        //    //repo.Add<FileAction>(performRollup);
+
+                        //    //performRollup.ForEach(f=> logger.Debug("Added " + f.Id));
+                        //}
 
                     }
 

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MongoDB.Bson;
+using MongoDB.Bson.IO;
+using MongoDB.Bson.Serialization;
 using ThreeOneThree.Proxima.Core.Entities;
 
 namespace ThreeOneThree.Proxima.Core
@@ -118,4 +121,5 @@ namespace ThreeOneThree.Proxima.Core
 
         public string Type => typeof(T).FullName;
     }
+
 }

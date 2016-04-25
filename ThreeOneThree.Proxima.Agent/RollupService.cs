@@ -17,6 +17,11 @@ namespace ThreeOneThree.Proxima.Agent
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
 
+        //public static List<FileAction> PerformRollup(List<USNChangeRange> range)
+        //{
+        //    var deletedFiles = range.Where(e=>  e.Entry)
+        //}
+
         public static List<FileAction> PerformRollup(List<FileAction> toReturn)
         {
             var deletedFiles = toReturn.OfType<DeleteAction>().ToList();

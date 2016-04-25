@@ -104,6 +104,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repository.cs" />
     <Compile Include="Entities\RawUSNEntry.cs" />
+    <Compile Include="Win32Api.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

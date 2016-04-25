@@ -1,4 +1,5 @@
 using System;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace ThreeOneThree.Proxima.Core.Entities
 {
@@ -53,7 +54,7 @@ namespace ThreeOneThree.Proxima.Core.Entities
         public USNChangeRange ChangeRange { get; set; }
     }
 
-    public class USNChangeRange
+    public class USNChangeRange : MongoEntity
     {
         public ulong FRN { get; set; }
 
@@ -62,14 +63,18 @@ namespace ThreeOneThree.Proxima.Core.Entities
 
         public bool Closed { get; set; }
 
-        public dynamic Entry { get; set; }
-
-        public dynamic RenameFrom { get; set; }
-    }
-
-    public class Win32ApiEntry
-    {
         
+        public Win32Api.UsnEntry Entry { get; set; }
+
+        
+        public Win32Api.UsnEntry RenameFrom { get; set; }
     }
+
+    public class OpenChangeRange : MongoEntity
+    {
+        public USNChangeRange ChangeRange { get; set; }
+    }
+
+
 
 }

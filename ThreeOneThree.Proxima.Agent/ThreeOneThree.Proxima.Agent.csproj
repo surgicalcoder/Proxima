@@ -99,7 +99,6 @@
     <Compile Include="USNJournalMonitor.cs" />
     <Compile Include="Singleton.cs" />
     <Compile Include="USNJournalSync.cs" />
-    <Compile Include="Win32Api.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

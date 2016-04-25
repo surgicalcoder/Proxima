@@ -6,6 +6,7 @@ using System.Management;
 using System.Linq;
 using System.Runtime.InteropServices;
 using NLog;
+using ThreeOneThree.Proxima.Core;
 
 namespace ThreeOneThree.Proxima.Agent
 {
