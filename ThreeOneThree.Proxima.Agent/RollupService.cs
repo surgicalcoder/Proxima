@@ -84,7 +84,7 @@ namespace ThreeOneThree.Proxima.Agent
                     Earliest = rawEntries.Where(e => e.RelativePath == relPath).Min(f => f.TimeStamp),
                     Latest = rawEntries.Where(e => e.RelativePath == relPath).Max(f => f.TimeStamp)
                 };
-                logger.Trace(max.ToString());
+                //logger.Trace(max.ToString());
             }
 
 
