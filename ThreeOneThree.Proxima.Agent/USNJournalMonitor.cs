@@ -92,8 +92,16 @@ namespace ThreeOneThree.Proxima.Agent
                                 {
                                     continue;
                                 }
-                                
-                              //  logger.Trace("FRN: " + frn);
+
+
+                                var actualPath = GetActualPath(journal, entriesForFile.FirstOrDefault());
+
+                                if (actualPath == "Unavailable")
+                                {
+                                    continue;
+                                }
+
+
                                 USNChangeRange range = new USNChangeRange
                                 {
                                     FRN = frn,
