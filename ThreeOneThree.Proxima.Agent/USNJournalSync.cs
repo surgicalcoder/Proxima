@@ -73,8 +73,8 @@ namespace ThreeOneThree.Proxima.Agent
                             logger.Trace("No changes found");
                             continue;
                         }
-                        logger.Trace($"{changedFiles.Count} changed files for {syncFrom.Id}");
-                        long lastUsn = rawEntries.LastOrDefault().USN;
+                        logger.Trace($"{changedFiles.Count} changed files for {syncFrom.Id} since USN {syncFrom.LastUSN}");
+                        long lastUsn = rawEntries.Max(f=>f.USN);
 
                         foreach (var fileAction in changedFiles)
                         {
