@@ -53,7 +53,7 @@ namespace ThreeOneThree.Proxima.Agent
                                                                f.Mountpoint == syncFrom.Mountpoint
                                                                && f.USN > syncFrom.LastUSN,
 
-                                limit: 256).ToList();
+                                limit: 256, AscendingSort: e => e.USN).ToList();
                         }
                         else
                         {
@@ -62,7 +62,7 @@ namespace ThreeOneThree.Proxima.Agent
                                                                && f.Mountpoint == syncFrom.Mountpoint
                                                                && f.USN > syncFrom.LastUSN,
 
-                                limit: 256).ToList();
+                                limit: 256, AscendingSort:e=>e.USN).ToList();
                         }
 
 

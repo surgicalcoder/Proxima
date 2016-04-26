@@ -233,7 +233,7 @@ namespace ThreeOneThree.Proxima.Core
 
         }
 
-        public IQueryable<T> Many<T>(Expression<Func<T, bool>> predicate, int limit=0, string OverrideCollectionName = "") where T : MongoEntity
+        public IQueryable<T> Many<T>(Expression<Func<T, bool>> predicate, int limit=0, Expression<Func<T, object>> AscendingSort=null, Expression<Func<T, object>> DescendingSort = null, string OverrideCollectionName = "") where T : MongoEntity
         {
             var mongoCollection = mongoDatabase.GetCollection<T>(GetCollectionNameForType<T>(OverrideCollectionName));
 
@@ -244,6 +244,15 @@ namespace ThreeOneThree.Proxima.Core
                 retr = retr.Limit(limit);
             }
 
+            if (AscendingSort != null)
+            {
+                retr = retr.SortBy(AscendingSort);
+            }
+
+            if (DescendingSort != null)
+            {
+                retr = retr.SortByDescending(DescendingSort);
+            }
 
             return retr.ToListAsync().Result.AsQueryable();
         }
