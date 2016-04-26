@@ -101,6 +101,11 @@ namespace ThreeOneThree.Proxima.Agent
                                     continue;
                                 }
 
+                                if (sourceMount.IgnoreList != null && sourceMount.IgnoreList.Any() && sourceMount.IgnoreList.Any(ignore => new Regex(ignore).IsMatch(actualPath)))
+                                {
+                                    continue;
+                                }
+
 
                                 USNChangeRange range = new USNChangeRange
                                 {
