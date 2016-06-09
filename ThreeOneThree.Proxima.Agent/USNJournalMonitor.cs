@@ -95,8 +95,8 @@ namespace ThreeOneThree.Proxima.Agent
 
 
                                 var actualPath = GetActualPath(journal, entriesForFile.FirstOrDefault());
-
-                                if (actualPath == "Unavailable")
+                                //logger.Trace("Actual Path " + actualPath);
+                                if (actualPath == "Unavailable" ||  String.IsNullOrWhiteSpace(actualPath) )
                                 {
                                     continue;
                                 }
@@ -164,33 +164,38 @@ namespace ThreeOneThree.Proxima.Agent
                                 
                                     f.Action.RelativePath == relativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
 
-
-                                    (f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                    (f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond) )
                                     &&
-                                    (f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
+                                    (f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond) )
+                                    //f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond)
 
-                                    ||
+                                    //(f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                    //&&
+                                    //(f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
 
-                                    (f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
-                                    &&
-                                    (f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
+                                    //||
 
-                                    ||
+                                    //(f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                    //&&
+                                    //(f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
 
-                                    (f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
-                                    &&
-                                    (f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
+                                    //||
 
-                                    ||
+                                    //(f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                    //&&
+                                    //(f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
 
-                                    (f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
-                                    &&
-                                    (f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
+                                    //||
+
+                                    //(f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                    //&&
+                                    //(f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
 
                                 );
                                 
                                 if (count > 0)
                                 {
+                                    //logger.Info("Count is " + count);
                                     continue;
                                 }
 
@@ -238,14 +243,14 @@ namespace ThreeOneThree.Proxima.Agent
                                 repo.Add<RawUSNEntry>(entries);
 
                                 var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
-                                logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
+                                logger.Info(string.Format("Adding [{2}CHANGE/{1}USN/{0}File]", performRollup.Count, entries.Count, changeRange.Count));
                                 foreach (var fileAction in performRollup)
                                 {
                                   //  logger.Trace("ADD: " + fileAction.RelativePath + ", USN:" + fileAction.USN);
                                 }
                                 repo.Add<FileAction>(performRollup);
 
-                                performRollup.ForEach(f=> logger.Debug("Added " + f.Id));
+                                //performRollup.ForEach(f=> logger.Debug("Added " + f.Id));
                             }
 
                             construct.CurrentJournalData = newUsnState;

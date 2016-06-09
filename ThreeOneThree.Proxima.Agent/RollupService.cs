@@ -84,17 +84,17 @@ namespace ThreeOneThree.Proxima.Agent
                     Earliest = rawEntries.Where(e => e.RelativePath == relPath).Min(f => f.TimeStamp),
                     Latest = rawEntries.Where(e => e.RelativePath == relPath).Max(f => f.TimeStamp)
                 };
-                //logger.Trace(max.ToString());
+                //logger.Info(max.ToString());
             }
 
-
+            //logger.Info("{0} rawEntries", rawEntries.Count);
             var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value));
-
+            //logger.Info("{0} entries", entries.Count());
             if (syncFrom.IgnoreList != null && syncFrom.IgnoreList.Any())
             {
                 entries = syncFrom.IgnoreList.Select(ignore => new Regex(ignore)).Aggregate(entries, (current, regex) => current.Where(f => !regex.IsMatch(f.RelativePath)));
             }
-
+            //logger.Info("{0} entries2", entries.Count());
             entries = entries.OrderBy(f => f.Path).ThenBy(f => f.FileCreate);
 
             var toReturn = new List<FileAction>();
