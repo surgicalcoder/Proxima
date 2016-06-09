@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThreeOneThree.Proxima.Agent", "ThreeOneThree.Proxima.Agent\ThreeOneThree.Proxima.Agent.csproj", "{9CDC23CB-B4E7-4528-AA44-A8E6F43F465D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThreeOneThree.Proxima.Core", "ThreeOneThree.Proxima.Core\ThreeOneThree.Proxima.Core.csproj", "{D9A81279-8D2A-4D9F-96A0-7AB66C8B3845}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThreeOneThree.Proxmia.Tests", "ThreeOneThree.Proxmia.Tests\ThreeOneThree.Proxmia.Tests.csproj", "{64E467A2-9109-4E16-BA3D-E40302D471D6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThreeOneThree.Proxima.Tests", "ThreeOneThree.Proxmia.Tests\ThreeOneThree.Proxima.Tests.csproj", "{64E467A2-9109-4E16-BA3D-E40302D471D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThreeOneThree.Proxima.Monitoring", "ThreeOneThree.Proxima.Monitoring\ThreeOneThree.Proxima.Monitoring.csproj", "{1949A8D3-BA7E-41B9-8FD8-BBD87F7E487C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{64E467A2-9109-4E16-BA3D-E40302D471D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{64E467A2-9109-4E16-BA3D-E40302D471D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{64E467A2-9109-4E16-BA3D-E40302D471D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1949A8D3-BA7E-41B9-8FD8-BBD87F7E487C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1949A8D3-BA7E-41B9-8FD8-BBD87F7E487C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1949A8D3-BA7E-41B9-8FD8-BBD87F7E487C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1949A8D3-BA7E-41B9-8FD8-BBD87F7E487C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
