@@ -10,7 +10,10 @@ namespace ThreeOneThree.Proxima.Core.Entities
 
         public string Path { get; set; }
 
+        public string TempPath { get; set; }
+
         public string RelativePathStartFilter { get; set; }
+
         public long LastUSN { get; set; }
     }
 }
