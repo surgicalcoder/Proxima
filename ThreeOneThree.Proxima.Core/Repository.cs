@@ -25,7 +25,7 @@ namespace ThreeOneThree.Proxima.Core
 
         private IMongoDatabase mongoDatabase { get; set; }
         private MongoClient client { get; set; }
-        //private MongoServer mongoServer { get; set; }
+        public string ConnectionString { get; set; }
 
         #endregion
 
@@ -50,20 +50,24 @@ namespace ThreeOneThree.Proxima.Core
         private void InitContext()
         {
             RegisterConventions();
-            client = new MongoClient(ConfigurationManager.ConnectionStrings[mongoContext].ConnectionString);
 
-            //mongoServer = client.GetServer();
-            mongoDatabase = client.GetDatabase(ConfigurationManager.ConnectionStrings[mongoContext].ConnectionString.Substring(ConfigurationManager.ConnectionStrings[mongoContext].ConnectionString.LastIndexOf("/") + 1));
+            MongoUrl mongoUrl;
+
+            if (String.IsNullOrWhiteSpace(ConnectionString))
+            {
+                
+                mongoUrl = new MongoUrl(ConfigurationManager.ConnectionStrings[mongoContext].ConnectionString);
+            }
+            else
+            {
+                mongoUrl = new MongoUrl(ConnectionString);
+            }
+
+            client = new MongoClient(mongoUrl.Url);
+            mongoDatabase = client.GetDatabase(mongoUrl.DatabaseName);
 
             InitDatabase();
         }
-
-        //public Repository(string MongoContext)
-        //{
-        //    this.MongoContext = MongoContext;
-
-        //    InitContext();
-        //}
 
         private void RegisterConventions()
         {
