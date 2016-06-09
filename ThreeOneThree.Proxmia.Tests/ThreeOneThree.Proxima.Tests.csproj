@@ -7,8 +7,8 @@
     <ProjectGuid>{64E467A2-9109-4E16-BA3D-E40302D471D6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ThreeOneThree.Proxmia.Tests</RootNamespace>
-    <AssemblyName>ThreeOneThree.Proxmia.Tests</AssemblyName>
+    <RootNamespace>ThreeOneThree.Proxima.Tests</RootNamespace>
+    <AssemblyName>ThreeOneThree.Proxima.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>

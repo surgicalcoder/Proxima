@@ -8,7 +8,7 @@ using ThreeOneThree.Proxima.Agent;
 using ThreeOneThree.Proxima.Core.Entities;
 
 
-namespace ThreeOneThree.Proxmia.Tests
+namespace ThreeOneThree.Proxima.Tests
 {
     [TestFixture]
     public class ProxmiaTests

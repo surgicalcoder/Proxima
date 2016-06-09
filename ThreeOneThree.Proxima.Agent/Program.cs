@@ -62,9 +62,9 @@ namespace ThreeOneThree.Proxima.Agent
                     });
                     x.RunAsLocalSystem();
                     x.StartAutomaticallyDelayed();
-                    x.SetDescription("The Proxmia Agent that monitors the USN Journal");
+                    x.SetDescription("The Proxima Agent that monitors the USN Journal");
                     x.SetDisplayName("ProximaAgent");
-                    x.SetServiceName("ThreeOneThree.Proxmia.Agent");
+                    x.SetServiceName("ThreeOneThree.Proxima.Agent");
 
 
 
