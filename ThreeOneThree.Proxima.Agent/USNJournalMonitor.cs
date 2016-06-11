@@ -152,8 +152,13 @@ namespace ThreeOneThree.Proxima.Agent
                                 string relativePath;
                                 try
                                 {
-                                    
-                                    relativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
+  
+                                    Uri drivePathUri = new Uri(drivePath.FullPath, UriKind.Absolute);
+                                    Uri actualPathUri = new Uri(actualPath, UriKind.Absolute);
+
+                                    relativePath = drivePathUri.MakeRelativeUri(actualPathUri).ToString();
+
+//                                    relativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
                                 }
                                 catch (Exception e)
                                 {
@@ -164,33 +169,32 @@ namespace ThreeOneThree.Proxima.Agent
                                 
                                     f.Action.RelativePath == relativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
 
-                                    (f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond) )
-                                    &&
-                                    (f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond) )
+
                                     //f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond)
 
-                                    //(f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
-                                    //&&
-                                    //(f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
+                                    (
+                                        ((f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                        &&
+                                        (f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond)))
 
-                                    //||
+                                        ||
 
-                                    //(f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
-                                    //&&
-                                    //(f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
+                                        ((f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                        &&
+                                        (f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond)))
 
-                                    //||
+                                        ||
 
-                                    //(f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
-                                    //&&
-                                    //(f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
+                                        ((f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                        &&
+                                        (f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond)))
 
-                                    //||
+                                        ||
 
-                                    //(f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
-                                    //&&
-                                    //(f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond))
-
+                                        ((f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
+                                        &&
+                                        (f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond)))
+                                    )
                                 );
                                 
                                 if (count > 0)
