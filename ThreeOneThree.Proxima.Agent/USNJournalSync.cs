@@ -158,8 +158,6 @@ namespace ThreeOneThree.Proxima.Agent
 
                 if (syncLog.Action.GetType() == typeof (DeleteAction))
                 {
-                    //logger.Info($"[{syncLog.Id}] Deleting {syncLog.Action.RelativePath}");
-
                     var path = Path.Get(syncFrom.Path, syncLog.Action.RelativePath);
 
                     logger.Info($"[{syncLog.Id}] [D] " + path);
@@ -190,10 +188,6 @@ namespace ThreeOneThree.Proxima.Agent
                     if (String.IsNullOrWhiteSpace(renameAction.RenameFrom))
                     {
                         CopyFile(syncLog, syncFrom);
-                        //syncLog.Successfull = false;
-                        //syncLog.RequiresManualIntervention = true;
-                        //syncLog.ActionFinishDate = DateTime.Now;
-                        //Singleton.Instance.Repository.Update(syncLog);
 
                     }
 
@@ -250,7 +244,6 @@ namespace ThreeOneThree.Proxima.Agent
 
         private static bool CopyFile(USNJournalSyncLog syncLog, SyncMountpoint syncFrom)
         {
-            bool successfull;
             logger.Info($"[{syncLog.Id}] [C] {syncLog.Action.RelativePath}");
 
             var copyAction = syncLog.Action as UpdateAction;
@@ -269,8 +262,7 @@ namespace ThreeOneThree.Proxima.Agent
 
             Path.Get(publicPath, relativePath).Copy(Path.Get(syncFrom.Path, relativePath), Overwrite.Always, true);
 
-            successfull = true;
-            return successfull;
+            return true;
         }
     }
 }

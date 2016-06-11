@@ -54,16 +54,8 @@ namespace ThreeOneThree.Proxima.Agent
                 using (Repository repo = new Repository())
                 {
 
-                    
-
-
                     foreach (var sourceMount in Singleton.Instance.SourceMountpoints)
                     {
-
-                        
-
-                        
-
                         var construct = new DriveConstruct(sourceMount.MountPoint);
                         Win32Api.USN_JOURNAL_DATA newUsnState;
                         List<Win32Api.UsnEntry> usnEntries;
@@ -71,18 +63,21 @@ namespace ThreeOneThree.Proxima.Agent
                             
                         var drivePath = Path.Get(construct.DriveLetter);
                             
-                        logger.Debug("Polling for changes from " + sourceMount.CurrentUSNLocation);
+                        logger.Trace("Polling for changes from " + sourceMount.CurrentUSNLocation);
 
                         var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
                             
                         if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                         {
                             List<RawUSNEntry> entries = new List<RawUSNEntry>();
-                            logger.Debug("USN returned with " + usnEntries.Count + " entries");
+                            if (usnEntries.Any())
+                            {
+                                logger.Debug("USN returned with " + usnEntries.Count + " entries");
+                            }
 
                             List<USNChangeRange> changeRange = new List<USNChangeRange>();
 
-                            foreach (var frn in usnEntries/*.Where(e=> e.SourceInfo != Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement && e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement)*/.Select(e=>e.FileReferenceNumber).Distinct())
+                            foreach (var frn in usnEntries.Select(e=>e.FileReferenceNumber).Distinct())
                             {
                                 
 
@@ -93,9 +88,8 @@ namespace ThreeOneThree.Proxima.Agent
                                     continue;
                                 }
 
-
                                 var actualPath = GetActualPath(journal, entriesForFile.FirstOrDefault());
-                                //logger.Trace("Actual Path " + actualPath);
+
                                 if (actualPath == "Unavailable" ||  String.IsNullOrWhiteSpace(actualPath) )
                                 {
                                     continue;
@@ -120,23 +114,7 @@ namespace ThreeOneThree.Proxima.Agent
                                 changeRange.Add(range);
                             }
 
-                            logger.Trace("ChangeRange : " + changeRange.Count);
-
-
-                            //changeRange.RemoveAll(range =>
-                            //{
-
-                            //    if (!range.Closed)
-                            //    {
-                            //        //OpenChangeRange open = new OpenChangeRange();
-                            //        //open.ChangeRange = range;
-                            //        //repo.Add(open);
-                            //        logger.Trace("Ditching " + ((Win32Api.UsnEntry) range.Entry).Name + " because it's not closed" );
-                            //        return true;
-                            //    }
-
-                            //    return false;
-                            //});
+                            //logger.Trace("ChangeRange : " + changeRange.Count);
 
 
                             foreach (var item in changeRange)
@@ -157,8 +135,6 @@ namespace ThreeOneThree.Proxima.Agent
                                     Uri actualPathUri = new Uri(actualPath, UriKind.Absolute);
 
                                     relativePath = drivePathUri.MakeRelativeUri(actualPathUri).ToString();
-
-//                                    relativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(actualPath, "", 1);
                                 }
                                 catch (Exception e)
                                 {
@@ -168,9 +144,6 @@ namespace ThreeOneThree.Proxima.Agent
                                 var count = repo.Count<USNJournalSyncLog>(f =>
                                 
                                     f.Action.RelativePath == relativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
-
-
-                                    //f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond)
 
                                     (
                                         ((f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
@@ -269,36 +242,15 @@ namespace ThreeOneThree.Proxima.Agent
                             logger.Error("Error on Monitor - " + rtn.ToString());
                             throw new UsnJournalException(rtn);
                         }
-
-                        //if (entries.Any())
-                        //{
-                        //    //repo.Add<RawUSNEntry>(entries);
-
-                            
-                        //    //var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
-                        //    //logger.Info(string.Format("Adding [{1}USN/{0}File]", performRollup.Count, entries.Count));
-
-                        //    //foreach (var fileAction in performRollup)
-                        //    //{
-                        //    //    logger.Trace("ADD: " + fileAction.RelativePath + ", USN:" + fileAction.USN);
-                        //    //}
-                        //    //repo.Add<FileAction>(performRollup);
-
-                        //    //performRollup.ForEach(f=> logger.Debug("Added " + f.Id));
-                        //}
-
                     }
-
-
-                    
                 }
             }
                  
-                catch (Exception e)
-                {
-                    logger.Error(e, "Error in USNJournalMonitor");
-                }
-}
+            catch (Exception e)
+            {
+                logger.Error(e, "Error in USNJournalMonitor");
+            }
+        }
 
         private static string GetActualPath(NtfsUsnJournal journal, Win32Api.UsnEntry item)
         {
@@ -315,7 +267,7 @@ namespace ThreeOneThree.Proxima.Agent
             {
                 return actualPath;
             }
-            if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant())) // || actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+            if (actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\System Volume Information".ToLowerInvariant()))
             {
                 return actualPath;
             }
