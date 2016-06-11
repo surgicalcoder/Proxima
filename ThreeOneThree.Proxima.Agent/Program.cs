@@ -88,9 +88,14 @@ namespace ThreeOneThree.Proxima.Agent
                     Args.InvokeAction<ConsoleCommands.Dest>(args.Skip(1).ToArray());
                     usageHints = ArgUsage.GenerateUsageFromTemplate<ConsoleCommands.Dest>();
                 }
+                else if (args[0].ToLowerInvariant() == "query")
+                {
+                    Args.InvokeAction<ConsoleCommands.USNQuery>(args.Skip(1).ToArray());
+                    usageHints = ArgUsage.GenerateUsageFromTemplate<ConsoleCommands.USNQuery>();
+                }
                 else
                 {
-                    Console.WriteLine("Missing type of config - source or dest");
+                    Console.WriteLine("Missing type of config - source, dest or query");
                     return;
                 }
             }

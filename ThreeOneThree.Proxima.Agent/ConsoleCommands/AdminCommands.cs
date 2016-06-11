@@ -87,4 +87,23 @@ namespace ThreeOneThree.Proxima.Agent.ConsoleCommands
             }
         }
     }
+
+    [ArgExceptionBehavior(ArgExceptionPolicy.StandardExceptionHandling)]
+    public class USNQuery
+    {
+
+        [ArgActionMethod]
+        public void Position(string Path)
+        {
+            NtfsUsnJournal journal = new NtfsUsnJournal(Path);
+            Win32Api.USN_JOURNAL_DATA journalData = new Win32Api.USN_JOURNAL_DATA();
+            var usnJournalReturnCode = journal.GetUsnJournalState(ref journalData);
+
+            if (usnJournalReturnCode == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
+            {
+                Console.WriteLine("Next USN: " + journalData.NextUsn);
+            }
+        }
+    }
+
 }
