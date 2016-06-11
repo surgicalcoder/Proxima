@@ -140,33 +140,40 @@ namespace ThreeOneThree.Proxima.Agent
                                 {
                                     relativePath = "#ERROR#";
                                 }
+                                var itemMin = item.Min.Truncate(TimeSpan.TicksPerMillisecond);
+                                var itemMax = item.Max.Truncate(TimeSpan.TicksPerMillisecond);
 
                                 var count = repo.Count<USNJournalSyncLog>(f =>
-                                
-                                    f.Action.RelativePath == relativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
 
+                                   f.Action.RelativePath == relativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
                                     (
-                                        ((f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
-                                        &&
-                                        (f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond)))
+                                        (
+                                            (f.ActionStartDate.HasValue && f.ActionStartDate <= itemMin)
+                                            &&
+                                            (f.ActionFinishDate.HasValue && f.ActionFinishDate >= itemMax)
+                                        )
 
                                         ||
-
-                                        ((f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
-                                        &&
-                                        (f.ActionFinishDate.HasValue && f.ActionFinishDate >= item.Max.Truncate(TimeSpan.TicksPerMillisecond)))
-
-                                        ||
-
-                                        ((f.ActionStartDate.HasValue && f.ActionStartDate <= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
-                                        &&
-                                        (f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond)))
-
-                                        ||
-
-                                        ((f.ActionStartDate.HasValue && f.ActionStartDate >= item.Min.Truncate(TimeSpan.TicksPerMillisecond))
-                                        &&
-                                        (f.ActionFinishDate.HasValue && f.ActionFinishDate <= item.Max.Truncate(TimeSpan.TicksPerMillisecond)))
+           
+                                        (
+                                            (
+                                                ( ( f.ActionStartDate.HasValue && f.ActionStartDate >= itemMin) && f.ActionFinishDate.HasValue && f.ActionFinishDate <= itemMin )
+                                                    &&
+                                                (f.ActionFinishDate.HasValue && f.ActionFinishDate >= itemMax)
+                                            )
+                                            ||
+                                            (
+                                                (f.ActionStartDate.HasValue && f.ActionStartDate <= itemMin)
+                                                &&
+                                                ((f.ActionFinishDate.HasValue && f.ActionFinishDate <= itemMax) && f.ActionStartDate.HasValue && f.ActionStartDate >= itemMin )
+                                            )
+                                            ||
+                                            (
+                                                (f.ActionStartDate.HasValue && f.ActionStartDate >= itemMin)
+                                                &&
+                                                (f.ActionFinishDate.HasValue && f.ActionFinishDate <= itemMax)
+                                            )
+                                        )
                                     )
                                 );
                                 
