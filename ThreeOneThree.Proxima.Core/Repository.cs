@@ -47,6 +47,13 @@ namespace ThreeOneThree.Proxima.Core
             InitContext();
         }
 
+        public Repository(string connectionString)
+        {
+            ConnectionString = connectionString;
+            mongoContext = "ProxmiaContext";
+            InitContext();
+        }
+
         private void InitContext()
         {
             RegisterConventions();
