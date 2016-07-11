@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
-//using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Fluent.IO;
 using MongoDB.Bson;
 using NLog;
@@ -53,7 +53,7 @@ namespace ThreeOneThree.Proxima.Agent
                                                                f.Mountpoint == syncFrom.Mountpoint
                                                                && f.USN > syncFrom.LastUSN,
 
-                                limit: 256, AscendingSort: e => e.USN).ToList();
+                                limit: Singleton.Instance.CurrentServer.NormalCopyLimit, AscendingSort: e => e.USN).ToList();
                         }
                         else
                         {
@@ -62,7 +62,7 @@ namespace ThreeOneThree.Proxima.Agent
                                                                && f.Mountpoint == syncFrom.Mountpoint
                                                                && f.USN > syncFrom.LastUSN,
 
-                                limit: 256, AscendingSort:e=>e.USN).ToList();
+                                limit: Singleton.Instance.CurrentServer.NormalCopyLimit, AscendingSort:e=>e.USN).ToList();
                         }
 
 
@@ -76,7 +76,7 @@ namespace ThreeOneThree.Proxima.Agent
                         logger.Trace($"{changedFiles.Count} changed files for {syncFrom.Id} since USN {syncFrom.LastUSN}");
                         long lastUsn = rawEntries.Max(f=>f.USN);
 
-                        foreach (var fileAction in changedFiles)
+                        Parallel.ForEach(changedFiles, new ParallelOptions{MaxDegreeOfParallelism = Singleton.Instance.CurrentServer.MaxThreads}, fileAction =>
                         {
                             USNJournalSyncLog log = new USNJournalSyncLog();
                             log.Enqueued = DateTime.Now;
@@ -86,25 +86,24 @@ namespace ThreeOneThree.Proxima.Agent
                             log.Action = fileAction;
 
                             repo.Add(log);
-                            
+
                             TransferItem(log, syncFrom);
-                        }
+                        });
 
 
                         IQueryable<USNJournalSyncLog> failedSync;
 
+
                         if (String.IsNullOrWhiteSpace(syncFrom.RelativePathStartFilter))
                         {
-                            failedSync = repo.Many<USNJournalSyncLog>(f => !f.Successfull && f.Action.Mountpoint == syncFrom.Mountpoint && !f.RequiresManualIntervention, limit: 32);
+                            failedSync = repo.Many<USNJournalSyncLog>(f => !f.Successfull && f.Action.Mountpoint == syncFrom.Mountpoint && !f.RequiresManualIntervention, limit: Singleton.Instance.CurrentServer.FailedCopyLimit);
                         }
                         else
                         {
-                            failedSync = repo.Many<USNJournalSyncLog>(f => f.Action.RelativePath.StartsWith(syncFrom.RelativePathStartFilter) && !f.Successfull && f.Action.Mountpoint == syncFrom.Mountpoint && !f.RequiresManualIntervention, limit: 32);
+                            failedSync = repo.Many<USNJournalSyncLog>(f => f.Action.RelativePath.StartsWith(syncFrom.RelativePathStartFilter) && !f.Successfull && f.Action.Mountpoint == syncFrom.Mountpoint && !f.RequiresManualIntervention, limit: Singleton.Instance.CurrentServer.FailedCopyLimit);
                         }
 
-                        
-
-                        foreach (var failedItem in failedSync)
+                        Parallel.ForEach(failedSync, new ParallelOptions { MaxDegreeOfParallelism = Singleton.Instance.CurrentServer.MaxThreads }, failedItem =>
                         {
                             if (failedItem.Retries == null)
                             {
@@ -120,16 +119,15 @@ namespace ThreeOneThree.Proxima.Agent
                                     failedItem.RequiresManualIntervention = true;
 
                                     Singleton.Instance.Repository.Update(failedItem);
-                                    continue;
+                                    return;
                                 }
                                 failedItem.Retries.Add(DateTime.Now);
                             }
 
-                            
+
 
                             TransferItem(failedItem, syncFrom);
-
-                        }
+                        });
 
                         syncFrom.LastUSN = lastUsn;
                         repo.Update(syncFrom);

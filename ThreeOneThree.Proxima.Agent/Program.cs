@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using NLog;
 using PowerArgs;
@@ -25,12 +26,19 @@ namespace ThreeOneThree.Proxima.Agent
                 Singleton.Instance.Servers = repo.All<Server>().ToList();
 
                 var currentServer = Singleton.Instance.Servers.FirstOrDefault(f => f.MachineName == Environment.MachineName.ToLowerInvariant());
+
                 if (currentServer == null)
                 {
-                    currentServer = new Server(Environment.MachineName);
+                    currentServer = new Server {MachineName = Environment.MachineName, FailedCopyLimit = 32, MaxThreads = 1, MonitorCheckInSecs = 2, NormalCopyLimit = 2, SyncCheckInSecs = 2, Version = Assembly.GetExecutingAssembly().GetName().Version.ToString() };
                     repo.Add(currentServer);
                     Singleton.Instance.Servers.Add(currentServer);
                 }
+                else
+                {
+                    currentServer.Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                    repo.Update(currentServer);
+                }
+
                 logger.Debug(string.Format("Current server = {0} ({1})", currentServer.MachineName, currentServer.Id));
                 Singleton.Instance.CurrentServer = currentServer;
                 Singleton.Instance.DestinationMountpoints = repo.Many<SyncMountpoint>(f => f.DestinationServer == currentServer.Id).ToList();
@@ -54,10 +62,10 @@ namespace ThreeOneThree.Proxima.Agent
                         service.WhenStopped((a, control) => a.Stop(control));
 
                         service.ScheduleQuartzJob(b => b.WithJob(() => JobBuilder.Create<USNJournalSync>().Build())
-                          .AddTrigger(() => TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(2).RepeatForever()).Build()));
+                          .AddTrigger(() => TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(Singleton.Instance.CurrentServer.SyncCheckInSecs).RepeatForever()).Build()));
 
                         service.ScheduleQuartzJob(b => b.WithJob(() => JobBuilder.Create<USNJournalMonitor>().Build())
-                            .AddTrigger(() => TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(2).RepeatForever()).Build()));
+                            .AddTrigger(() => TriggerBuilder.Create().WithSimpleSchedule(builder => builder.WithMisfireHandlingInstructionFireNow().WithIntervalInSeconds(Singleton.Instance.CurrentServer.MonitorCheckInSecs).RepeatForever()).Build()));
 
                     });
                     x.RunAsLocalSystem();
