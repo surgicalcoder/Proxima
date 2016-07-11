@@ -134,13 +134,22 @@ namespace ThreeOneThree.Proxima.Agent
                                     Uri drivePathUri = new Uri(drivePath.FullPath, UriKind.Absolute);
                                     Uri actualPathUri = new Uri(actualPath, UriKind.Absolute);
 
-                                    relativePath = drivePathUri.MakeRelativeUri(actualPathUri).ToString();
+                                    relativePath = Uri.UnescapeDataString(drivePathUri.MakeRelativeUri(actualPathUri).ToString());
+
+
                                 }
                                 catch (Exception e)
                                 {
                                     relativePath = "#ERROR#";
                                 }
-                                var itemMin = item.Min.Truncate(TimeSpan.TicksPerMillisecond);
+
+                                if (relativePath == "#ERROR#" || relativePath.StartsWith("System Volume Information"))
+                                {
+                                    continue;
+                                }
+
+
+                               var itemMin = item.Min.Truncate(TimeSpan.TicksPerMillisecond);
                                 var itemMax = item.Max.Truncate(TimeSpan.TicksPerMillisecond);
 
                                 var count = repo.Count<USNJournalSyncLog>(f =>
@@ -182,6 +191,8 @@ namespace ThreeOneThree.Proxima.Agent
                                     //logger.Info("Count is " + count);
                                     continue;
                                 }
+
+                                
 
 
                                 var dbEntry = new RawUSNEntry();
