@@ -76,16 +76,16 @@ namespace ThreeOneThree.Proxima.Agent
         {
 
 
-            foreach (var relPath in rawEntries.Select(f => f.RelativePath).Distinct())
-            {
-                MinMax max = new MinMax
-                {
-                    RelativePath = relPath,
-                    Earliest = rawEntries.Where(e => e.RelativePath == relPath).Min(f => f.TimeStamp),
-                    Latest = rawEntries.Where(e => e.RelativePath == relPath).Max(f => f.TimeStamp)
-                };
-                //logger.Info(max.ToString());
-            }
+            //foreach (var relPath in rawEntries.Select(f => f.RelativePath).Distinct())
+            //{
+            //    MinMax max = new MinMax
+            //    {
+            //        RelativePath = relPath,
+            //        Earliest = rawEntries.Where(e => e.RelativePath == relPath).Min(f => f.TimeStamp),
+            //        Latest = rawEntries.Where(e => e.RelativePath == relPath).Max(f => f.TimeStamp)
+            //    };
+            //    //logger.Info(max.ToString());
+            //}
 
             //logger.Info("{0} rawEntries", rawEntries.Count);
             var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value));
