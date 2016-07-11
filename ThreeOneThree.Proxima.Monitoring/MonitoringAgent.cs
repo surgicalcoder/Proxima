@@ -31,7 +31,7 @@ namespace ThreeOneThree.Proxima.Monitoring
 
                 logger.Trace("Acting on SyncMountpoint " + syncMountpoint.Id);
 
-                var LastItem = repository.Many<RawUSNEntry>(e => e.Mountpoint == syncMountpoint.Mountpoint && e.USN > syncMountpoint.LastUSN).FirstOrDefault();
+                var LastItem = repository.Many<RawUSNEntry>(e => e.Mountpoint == syncMountpoint.Mountpoint && e.USN > syncMountpoint.LastUSN, AscendingSort:entry => entry.USN ).FirstOrDefault();
                 var Number = repository.Many<RawUSNEntry>(e => e.Mountpoint == syncMountpoint.Mountpoint && e.USN > syncMountpoint.LastUSN).Count();
 
                 double delay=0;
