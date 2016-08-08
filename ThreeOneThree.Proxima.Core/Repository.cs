@@ -9,6 +9,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
+using NLog;
 using ThreeOneThree.Proxima.Core.Entities;
 using Utilities.DataTypes;
 
@@ -19,7 +20,7 @@ namespace ThreeOneThree.Proxima.Core
         private string mongoContext;
 
         #region Props
-
+        private static Logger logger = LogManager.GetCurrentClassLogger();
         private static DateTime InitLastChecked { get; set; }
         private static bool InitRun { get; set; }
 
@@ -43,14 +44,14 @@ namespace ThreeOneThree.Proxima.Core
 
         public Repository()
         {
-            mongoContext = "ProxmiaContext";
+            mongoContext = "ProximaContext";
             InitContext();
         }
 
         public Repository(string connectionString)
         {
             ConnectionString = connectionString;
-            mongoContext = "ProxmiaContext";
+            mongoContext = "ProximaContext";
             InitContext();
         }
 
@@ -69,10 +70,10 @@ namespace ThreeOneThree.Proxima.Core
             {
                 mongoUrl = new MongoUrl(ConnectionString);
             }
-
+            
             client = new MongoClient(mongoUrl.Url);
             mongoDatabase = client.GetDatabase(mongoUrl.DatabaseName);
-
+            //logger.Trace("Connected to " + mongoUrl.ToString());
             InitDatabase();
         }
 

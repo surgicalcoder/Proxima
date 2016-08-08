@@ -11,7 +11,7 @@ using ThreeOneThree.Proxima.Core.Entities;
 namespace ThreeOneThree.Proxima.Tests
 {
     [TestFixture]
-    public class ProxmiaTests
+    public class ProximaTests
     {
         
         SyncMountpoint mountPoint = new SyncMountpoint() {

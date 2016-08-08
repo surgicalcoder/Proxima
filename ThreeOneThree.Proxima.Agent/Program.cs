@@ -24,12 +24,13 @@ namespace ThreeOneThree.Proxima.Agent
             using(Repository repo = new Repository())
             {
                 Singleton.Instance.Servers = repo.All<Server>().ToList();
-
+                logger.Trace(string.Format("{0} number of total servers", Singleton.Instance.Servers.Count));
                 var currentServer = Singleton.Instance.Servers.FirstOrDefault(f => f.MachineName == Environment.MachineName.ToLowerInvariant());
 
                 if (currentServer == null)
                 {
-                    currentServer = new Server {MachineName = Environment.MachineName, FailedCopyLimit = 32, MaxThreads = 1, MonitorCheckInSecs = 2, NormalCopyLimit = 2, SyncCheckInSecs = 2, Version = Assembly.GetExecutingAssembly().GetName().Version.ToString() };
+                    currentServer = new Server {MachineName = Environment.MachineName, FailedCopyLimit = 32, MaxThreads = 1, MonitorCheckInSecs = 2, NormalCopyLimit = 256, SyncCheckInSecs = 2, Version = Assembly.GetExecutingAssembly().GetName().Version.ToString() };
+                    logger.Trace("Creating new server");
                     repo.Add(currentServer);
                     Singleton.Instance.Servers.Add(currentServer);
                 }

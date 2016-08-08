@@ -21,10 +21,10 @@ namespace ThreeOneThree.Proxima.Agent
 
         public void Execute(IJobExecutionContext context)
         {
-            //logger.Trace("USNJournalSync Execution");
+            logger.Trace("USNJournalSync Execution");
             if (Singleton.Instance.DestinationMountpoints == null || Singleton.Instance.DestinationMountpoints.Count == 0)
             {
-                //logger.Trace("No destination points");
+                logger.Trace("No destination points");
                 return;
             }
 
