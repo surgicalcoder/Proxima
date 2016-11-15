@@ -1,5 +1,5 @@
 # Proxima
-Proxima is a DFS-R replacement, designed to operate and work in the cloud. Uses MongoDB as a backend to store and sync NTFS file changes. Currently in active development, but has been used to sync over 182 million files to date, and counting.
+Proxima is a DFS-R replacement, designed to operate and work in the cloud. Uses MongoDB as a backend to store and sync NTFS file changes. Currently in active development, but has been used to sync over 250 million files to date, and counting.
 
 ## Appveyor build
 
