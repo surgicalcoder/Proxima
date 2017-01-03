@@ -193,17 +193,9 @@ namespace ThreeOneThree.Proxima.Core
         {
             var mongoCollection = mongoDatabase.GetCollection<T>(GetCollectionNameForType<T>(OverrideCollectionName));
 
+            var result = mongoCollection.Find(e => e.Id == id).ToListAsync().Result;
 
-            //if (!mongoCollection.Exists())
-            //{
-            //    return null;
-            //}
-
-
-            var wibble = mongoCollection.Find(e => e.Id == id).ToListAsync().Result;
-
-
-            var val = wibble.FirstOrDefault();
+            var val = result.FirstOrDefault();
 
             if (PreLoad != null)
             {

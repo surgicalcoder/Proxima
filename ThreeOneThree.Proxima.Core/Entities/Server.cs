@@ -10,6 +10,8 @@ namespace ThreeOneThree.Proxima.Core.Entities
 
         public int MaxThreads { get; set; }
 
+        public string LocalTempPath { get; set; }
+
         public int SyncCheckInSecs { get; set; }
 
         public int MonitorCheckInSecs { get; set; }

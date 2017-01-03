@@ -126,17 +126,14 @@ namespace ThreeOneThree.Proxima.Agent
                                 {
                                     continue;
                                 }
-
+                                
                                 string relativePath;
                                 try
                                 {
-  
                                     Uri drivePathUri = new Uri(drivePath.FullPath, UriKind.Absolute);
                                     Uri actualPathUri = new Uri(actualPath, UriKind.Absolute);
 
                                     relativePath = Uri.UnescapeDataString(drivePathUri.MakeRelativeUri(actualPathUri).ToString());
-
-
                                 }
                                 catch (Exception e)
                                 {
@@ -149,52 +146,33 @@ namespace ThreeOneThree.Proxima.Agent
                                 }
 
 
-                               var itemMin = item.Min.Truncate(TimeSpan.TicksPerMillisecond);
-                                var itemMax = item.Max.Truncate(TimeSpan.TicksPerMillisecond);
-
-                                var count = repo.Count<USNJournalSyncLog>(f =>
-
-                                   f.Action.RelativePath == relativePath && f.DestinationMachine == Singleton.Instance.CurrentServer &&
-                                    (
-                                        (
-                                            (f.ActionStartDate.HasValue && f.ActionStartDate <= itemMin)
-                                            &&
-                                            (f.ActionFinishDate.HasValue && f.ActionFinishDate >= itemMax)
-                                        )
-
-                                        ||
-           
-                                        (
-                                            (
-                                                ( ( f.ActionStartDate.HasValue && f.ActionStartDate >= itemMin) && f.ActionFinishDate.HasValue && f.ActionFinishDate <= itemMin )
-                                                    &&
-                                                (f.ActionFinishDate.HasValue && f.ActionFinishDate >= itemMax)
-                                            )
-                                            ||
-                                            (
-                                                (f.ActionStartDate.HasValue && f.ActionStartDate <= itemMin)
-                                                &&
-                                                ((f.ActionFinishDate.HasValue && f.ActionFinishDate <= itemMax) && f.ActionStartDate.HasValue && f.ActionStartDate >= itemMin )
-                                            )
-                                            ||
-                                            (
-                                                (f.ActionStartDate.HasValue && f.ActionStartDate >= itemMin)
-                                                &&
-                                                (f.ActionFinishDate.HasValue && f.ActionFinishDate <= itemMax)
-                                            )
-                                        )
-                                    )
-                                );
-                                
-                                if (count > 0)
+                                if (relativePath.StartsWith(Singleton.Instance.CurrentServer.LocalTempPath))
                                 {
-                                    //logger.Info("Count is " + count);
                                     continue;
                                 }
+                                string renameFromRelativePath = "";
+                                if (item.RenameFrom != null)
+                                {
+                                    string renameFromPath = GetActualPath(journal, ((Win32Api.UsnEntry)item.RenameFrom));
+                                    
+                                    try
+                                    {
+                                        Uri drivePathUri = new Uri(drivePath.FullPath, UriKind.Absolute);
+                                        Uri actualPathUri = new Uri(actualPath, UriKind.Absolute);
 
+                                        renameFromRelativePath = Uri.UnescapeDataString(drivePathUri.MakeRelativeUri(actualPathUri).ToString());
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        renameFromRelativePath = "";
+                                    }
+                                }
+
+                                if (!String.IsNullOrWhiteSpace(renameFromRelativePath) && renameFromRelativePath.StartsWith(Singleton.Instance.CurrentServer.LocalTempPath))
+                                {
+                                    continue;
+                                }
                                 
-
-
                                 var dbEntry = new RawUSNEntry();
 
                                 PopulateFlags(dbEntry, item.Entry);

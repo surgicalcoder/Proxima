@@ -41,7 +41,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                         if (syncFrom.Mountpoint.Reference.PublicPath == null)
                         {
-                            logger.Warn(string.Format("PublicPath for DestinationMountPoint:{0} is null! Aborting copy.", syncFrom.Id));
+                            logger.Warn($"PublicPath for DestinationMountPoint:{syncFrom.Id} is null! Aborting copy.");
                             continue;
                         }
                         
@@ -164,6 +164,7 @@ namespace ThreeOneThree.Proxima.Agent
                     {
                         if (syncLog.Action.IsDirectory)
                         {
+                            
                             path.Delete(true);
                         }
                         else
