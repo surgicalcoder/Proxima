@@ -10,6 +10,7 @@ using NLog;
 using Quartz;
 using ThreeOneThree.Proxima.Core;
 using ThreeOneThree.Proxima.Core.Entities;
+using DirectoryInfo = Alphaleonis.Win32.Filesystem.DirectoryInfo;
 using Path = Fluent.IO.Path;
 
 namespace ThreeOneThree.Proxima.Agent
@@ -162,14 +163,19 @@ namespace ThreeOneThree.Proxima.Agent
                     
                     if (path.Exists)
                     {
+                        var destinationPath = Path.Get(Singleton.Instance.CurrentServer.LocalTempPath, "toDelete", syncLog.Id).FullPath;
+
                         if (syncLog.Action.IsDirectory)
                         {
-                            
-                            path.Delete(true);
+                            DirectoryInfo info = new DirectoryInfo(path.FullPath);
+                            info.MoveTo(destinationPath);
+                            info.Delete(true, true);
                         }
                         else
                         {
-                            path.Delete(true);
+                            FileInfo info = new FileInfo(path.FullPath);
+                            info.MoveTo(destinationPath);
+                            info.Delete();
                         }
                     }
 
@@ -190,11 +196,22 @@ namespace ThreeOneThree.Proxima.Agent
 
                     }
 
-                    Path.Get(syncFrom.Path, renameAction.RenameFrom).Move(Path.Get(syncFrom.Path, renameAction.RelativePath).FullPath);
+                    string pathFrom = Path.Get(syncFrom.Path, renameAction.RenameFrom).FullPath;
+                    string tempPath = Path.Get(Singleton.Instance.CurrentServer.LocalTempPath, "toRename", syncLog.Id).FullPath;
+                    string pathTo = Path.Get(syncFrom.Path, renameAction.RelativePath).FullPath;
 
+                    if (syncLog.Action.IsDirectory)
+                    {
+                        new DirectoryInfo(pathFrom).MoveTo(tempPath);
+                        new DirectoryInfo(tempPath).MoveTo(pathTo);
+                    }
+                    else
+                    {
+                        new FileInfo(pathFrom).MoveTo(tempPath);
+                        new FileInfo(tempPath).MoveTo(pathTo);
+                    }
+                    
                     successfull = true;
-
-
                 }
                 else
                 {
