@@ -197,12 +197,6 @@ namespace ThreeOneThree.Proxima.Agent
                 }
             }
 
-            //foreach (var fileAction in toReturn)
-            //{
-            //    rawEntries.OrderBy(f=>f.TimeStamp).FirstOrDefault(e=>e.RelativePath == fileAction.RelativePath)
-            //}
-
-
             return fileActions;
         }
 

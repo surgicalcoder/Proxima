@@ -51,195 +51,192 @@ namespace ThreeOneThree.Proxima.Agent
 
             try
             {
-                using (Repository repo = new Repository())
+                foreach (var sourceMount in Singleton.Instance.SourceMountpoints)
                 {
+                    var construct = new DriveConstruct(sourceMount.MountPoint);
+                    Win32Api.USN_JOURNAL_DATA newUsnState;
+                    List<Win32Api.UsnEntry> usnEntries;
+                    NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
+                            
+                    var drivePath = Path.Get(construct.DriveLetter);
+                            
+                    logger.Trace("Polling for changes from " + sourceMount.CurrentUSNLocation);
 
-                    foreach (var sourceMount in Singleton.Instance.SourceMountpoints)
+                    var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
+                            
+                    if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
                     {
-                        var construct = new DriveConstruct(sourceMount.MountPoint);
-                        Win32Api.USN_JOURNAL_DATA newUsnState;
-                        List<Win32Api.UsnEntry> usnEntries;
-                        NtfsUsnJournal journal = new NtfsUsnJournal(construct.DriveLetter);
-                            
-                        var drivePath = Path.Get(construct.DriveLetter);
-                            
-                        logger.Trace("Polling for changes from " + sourceMount.CurrentUSNLocation);
-
-                        var rtn = journal.GetUsnJournalEntries(construct.CurrentJournalData, reasonMask, out usnEntries, out newUsnState, OverrideLastUsn: sourceMount.CurrentUSNLocation);
-                            
-                        if (rtn == NtfsUsnJournal.UsnJournalReturnCode.USN_JOURNAL_SUCCESS)
+                        List<RawUSNEntry> entries = new List<RawUSNEntry>();
+                        if (usnEntries.Any())
                         {
-                            List<RawUSNEntry> entries = new List<RawUSNEntry>();
-                            if (usnEntries.Any())
+                            logger.Debug("USN returned with " + usnEntries.Count + " entries");
+                        }
+
+                        List<USNChangeRange> changeRange = new List<USNChangeRange>();
+
+                        foreach (var frn in usnEntries.Select(e=>e.FileReferenceNumber).Distinct())
+                        {
+                                
+
+                            var entriesForFile = usnEntries.Where(f => f.FileReferenceNumber == frn).ToList();
+
+                            if (entriesForFile.All(e => e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement || e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement))
                             {
-                                logger.Debug("USN returned with " + usnEntries.Count + " entries");
+                                continue;
                             }
 
-                            List<USNChangeRange> changeRange = new List<USNChangeRange>();
+                            var actualPath = GetActualPath(journal, entriesForFile.FirstOrDefault());
 
-                            foreach (var frn in usnEntries.Select(e=>e.FileReferenceNumber).Distinct())
+                            if (actualPath == "Unavailable" ||  String.IsNullOrWhiteSpace(actualPath) )
                             {
-                                
-
-                                var entriesForFile = usnEntries.Where(f => f.FileReferenceNumber == frn).ToList();
-
-                                if (entriesForFile.All(e => e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement || e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement))
-                                {
-                                    continue;
-                                }
-
-                                var actualPath = GetActualPath(journal, entriesForFile.FirstOrDefault());
-
-                                if (actualPath == "Unavailable" ||  String.IsNullOrWhiteSpace(actualPath) )
-                                {
-                                    continue;
-                                }
-
-                                if (sourceMount.IgnoreList != null && sourceMount.IgnoreList.Any() && sourceMount.IgnoreList.Any(ignore => new Regex(ignore).IsMatch(actualPath)))
-                                {
-                                    continue;
-                                }
-
-
-                                USNChangeRange range = new USNChangeRange
-                                {
-                                    FRN = frn,
-                                    Min = entriesForFile.Min(e => e.TimeStamp),
-                                    Max = entriesForFile.Max(e => e.TimeStamp),
-                                    Closed = entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault() != null ? (entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault().Reason & Win32Api.USN_REASON_CLOSE) != 0 : false,
-                                    RenameFrom = entriesForFile.FirstOrDefault(e => (e.Reason & Win32Api.USN_REASON_RENAME_OLD_NAME) != 0),
-                                    Entry = entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault()
-                                };
-
-                                changeRange.Add(range);
+                                continue;
                             }
 
-                            //logger.Trace("ChangeRange : " + changeRange.Count);
-
-
-                            foreach (var item in changeRange)
+                            if (sourceMount.IgnoreList != null && sourceMount.IgnoreList.Any() && sourceMount.IgnoreList.Any(ignore => new Regex(ignore).IsMatch(actualPath)))
                             {
-                                
-                                var actualPath = GetActualPath(journal, item.Entry as Win32Api.UsnEntry );
+                                continue;
+                            }
 
-                                if (actualPath == "Unavailable")
-                                {
-                                    continue;
-                                }
+
+                            USNChangeRange range = new USNChangeRange
+                            {
+                                FRN = frn,
+                                Min = entriesForFile.Min(e => e.TimeStamp),
+                                Max = entriesForFile.Max(e => e.TimeStamp),
+                                Closed = entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault() != null ? (entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault().Reason & Win32Api.USN_REASON_CLOSE) != 0 : false,
+                                RenameFrom = entriesForFile.FirstOrDefault(e => (e.Reason & Win32Api.USN_REASON_RENAME_OLD_NAME) != 0),
+                                Entry = entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault()
+                            };
+
+                            changeRange.Add(range);
+                        }
+
+                        //logger.Trace("ChangeRange : " + changeRange.Count);
+
+
+                        foreach (var item in changeRange)
+                        {
                                 
-                                string relativePath;
+                            var actualPath = GetActualPath(journal, item.Entry as Win32Api.UsnEntry );
+
+                            if (actualPath == "Unavailable")
+                            {
+                                continue;
+                            }
+                                
+                            string relativePath;
+                            try
+                            {
+                                Uri drivePathUri = new Uri(drivePath.FullPath, UriKind.Absolute);
+                                Uri actualPathUri = new Uri(actualPath, UriKind.Absolute);
+
+                                relativePath = Uri.UnescapeDataString(drivePathUri.MakeRelativeUri(actualPathUri).ToString());
+                            }
+                            catch (Exception e)
+                            {
+                                relativePath = "#ERROR#";
+                            }
+
+                            if (relativePath == "#ERROR#" || relativePath.StartsWith("System Volume Information"))
+                            {
+                                continue;
+                            }
+
+
+                            if (relativePath.StartsWith(Singleton.Instance.CurrentServer.LocalTempPath))
+                            {
+                                continue;
+                            }
+                            string renameFromRelativePath = "";
+                            if (item.RenameFrom != null)
+                            {
+                                string renameFromPath = GetActualPath(journal, ((Win32Api.UsnEntry)item.RenameFrom));
+                                    
                                 try
                                 {
                                     Uri drivePathUri = new Uri(drivePath.FullPath, UriKind.Absolute);
                                     Uri actualPathUri = new Uri(actualPath, UriKind.Absolute);
 
-                                    relativePath = Uri.UnescapeDataString(drivePathUri.MakeRelativeUri(actualPathUri).ToString());
+                                    renameFromRelativePath = Uri.UnescapeDataString(drivePathUri.MakeRelativeUri(actualPathUri).ToString());
                                 }
                                 catch (Exception e)
                                 {
-                                    relativePath = "#ERROR#";
+                                    renameFromRelativePath = "";
                                 }
-
-                                if (relativePath == "#ERROR#" || relativePath.StartsWith("System Volume Information"))
-                                {
-                                    continue;
-                                }
-
-
-                                if (relativePath.StartsWith(Singleton.Instance.CurrentServer.LocalTempPath))
-                                {
-                                    continue;
-                                }
-                                string renameFromRelativePath = "";
-                                if (item.RenameFrom != null)
-                                {
-                                    string renameFromPath = GetActualPath(journal, ((Win32Api.UsnEntry)item.RenameFrom));
-                                    
-                                    try
-                                    {
-                                        Uri drivePathUri = new Uri(drivePath.FullPath, UriKind.Absolute);
-                                        Uri actualPathUri = new Uri(actualPath, UriKind.Absolute);
-
-                                        renameFromRelativePath = Uri.UnescapeDataString(drivePathUri.MakeRelativeUri(actualPathUri).ToString());
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        renameFromRelativePath = "";
-                                    }
-                                }
-
-                                if (!String.IsNullOrWhiteSpace(renameFromRelativePath) && renameFromRelativePath.StartsWith(Singleton.Instance.CurrentServer.LocalTempPath))
-                                {
-                                    continue;
-                                }
-                                
-                                var dbEntry = new RawUSNEntry();
-
-                                PopulateFlags(dbEntry, item.Entry);
-
-                                dbEntry.Path = actualPath;
-                                dbEntry.RelativePath = relativePath;
-                                dbEntry.File = item.Entry.IsFile;
-                                dbEntry.Directory = item.Entry.IsFolder;
-                                dbEntry.FRN = item.Entry.FileReferenceNumber;
-                                dbEntry.PFRN = item.Entry.ParentFileReferenceNumber;
-                                dbEntry.RecordLength = item.Entry.RecordLength;
-                                dbEntry.USN = item.Entry.USN;
-                                dbEntry.Mountpoint = sourceMount;
-                                
-                                dbEntry.TimeStamp = item.Entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond);
-                                dbEntry.SourceInfo = item.Entry.SourceInfo.ToString();
-                                dbEntry.ChangeRange = item;
-                                
-                                if ( actualPath != null && actualPath != "Unavailable" && actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
-                                {
-                                    dbEntry.SystemFile = true;
-                                }
-
-
-                                if (item.RenameFrom != null)
-                                {
-                                    dbEntry.RenameFromPath = GetActualPath(journal, ((Win32Api.UsnEntry) item.RenameFrom));
-                                    if (!string.IsNullOrWhiteSpace(dbEntry.RenameFromPath ) && dbEntry.RenameFromPath != "Unavailable")
-                                    {
-                                        dbEntry.RenameFromRelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(dbEntry.RenameFromPath, "", 1);
-                                    }
-                                }
-
-                                entries.Add(dbEntry);
                             }
 
-
-                            if (changeRange.Any())
+                            if (!String.IsNullOrWhiteSpace(renameFromRelativePath) && renameFromRelativePath.StartsWith(Singleton.Instance.CurrentServer.LocalTempPath))
                             {
-                                repo.Add<USNChangeRange>(changeRange);
-                                repo.Add<RawUSNEntry>(entries);
+                                continue;
+                            }
+                                
+                            var dbEntry = new RawUSNEntry();
 
-                                var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
-                                logger.Info(string.Format("Adding [{2}CHANGE/{1}USN/{0}File]", performRollup.Count, entries.Count, changeRange.Count));
-                                foreach (var fileAction in performRollup)
-                                {
-                                  //  logger.Trace("ADD: " + fileAction.RelativePath + ", USN:" + fileAction.USN);
-                                }
-                                repo.Add<FileAction>(performRollup);
+                            PopulateFlags(dbEntry, item.Entry);
 
-                                //performRollup.ForEach(f=> logger.Debug("Added " + f.Id));
+                            dbEntry.Path = actualPath;
+                            dbEntry.RelativePath = relativePath;
+                            dbEntry.File = item.Entry.IsFile;
+                            dbEntry.Directory = item.Entry.IsFolder;
+                            dbEntry.FRN = item.Entry.FileReferenceNumber;
+                            dbEntry.PFRN = item.Entry.ParentFileReferenceNumber;
+                            dbEntry.RecordLength = item.Entry.RecordLength;
+                            dbEntry.USN = item.Entry.USN;
+                            dbEntry.Mountpoint = sourceMount;
+                                
+                            dbEntry.TimeStamp = item.Entry.TimeStamp.Truncate(TimeSpan.TicksPerMillisecond);
+                            dbEntry.SourceInfo = item.Entry.SourceInfo.ToString();
+                            dbEntry.ChangeRange = item;
+                                
+                            if ( actualPath != null && actualPath != "Unavailable" && actualPath.ToLowerInvariant().StartsWith($"{journal.MountPoint.TrimEnd('\\')}\\$".ToLowerInvariant()))
+                            {
+                                dbEntry.SystemFile = true;
                             }
 
-                            construct.CurrentJournalData = newUsnState;
-                            sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
-                            sourceMount.Volume = construct.Volume;
 
-                            repo.Update(sourceMount);
+                            if (item.RenameFrom != null)
+                            {
+                                dbEntry.RenameFromPath = GetActualPath(journal, ((Win32Api.UsnEntry) item.RenameFrom));
+                                if (!string.IsNullOrWhiteSpace(dbEntry.RenameFromPath ) && dbEntry.RenameFromPath != "Unavailable")
+                                {
+                                    dbEntry.RenameFromRelativePath = new Regex(Regex.Escape(drivePath.FullPath), RegexOptions.IgnoreCase).Replace(dbEntry.RenameFromPath, "", 1);
+                                }
+                            }
 
+                            entries.Add(dbEntry);
                         }
-                        else
+
+
+                        if (changeRange.Any())
                         {
-                            logger.Error("Error on Monitor - " + rtn.ToString());
-                            throw new UsnJournalException(rtn);
+                            Singleton.Instance.Repository.Add<USNChangeRange>(changeRange);
+                            Singleton.Instance.Repository.Add<RawUSNEntry>(entries);
+
+                            var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
+                            logger.Info(string.Format("Adding [{2}CHANGE/{1}USN/{0}File]", performRollup.Count, entries.Count, changeRange.Count));
+                            foreach (var fileAction in performRollup)
+                            {
+                                //  logger.Trace("ADD: " + fileAction.RelativePath + ", USN:" + fileAction.USN);
+                            }
+                            Singleton.Instance.Repository.Add<FileAction>(performRollup);
+
+                            //performRollup.ForEach(f=> logger.Debug("Added " + f.Id));
                         }
+
+                        construct.CurrentJournalData = newUsnState;
+                        sourceMount.CurrentUSNLocation = newUsnState.NextUsn;
+                        sourceMount.Volume = construct.Volume;
+
+                        Singleton.Instance.Repository.Update(sourceMount);
+
+                    }
+                    else
+                    {
+                        logger.Error("Error on Monitor - " + rtn.ToString());
+                        throw new UsnJournalException(rtn);
                     }
                 }
+                
             }
                  
             catch (Exception e)

@@ -16,7 +16,7 @@ namespace ThreeOneThree.Proxima.Agent
 {
     class Program
     {
-        static private List<string> TopshelfParameters = new List<string> { "install" ,"start","stop","uninstall"};
+        private static List<string> TopshelfParameters = new List<string> { "install" ,"start","stop","uninstall"};
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         static void Main(string[] args)
@@ -24,7 +24,9 @@ namespace ThreeOneThree.Proxima.Agent
             using(Repository repo = new Repository())
             {
                 Singleton.Instance.Servers = repo.All<Server>().ToList();
-                logger.Trace(string.Format("{0} number of total servers", Singleton.Instance.Servers.Count));
+
+                logger.Trace($"{Singleton.Instance.Servers.Count} number of total servers");
+
                 var currentServer = Singleton.Instance.Servers.FirstOrDefault(f => f.MachineName == Environment.MachineName.ToLowerInvariant());
 
                 if (currentServer == null)
@@ -40,7 +42,8 @@ namespace ThreeOneThree.Proxima.Agent
                     repo.Update(currentServer);
                 }
 
-                logger.Debug(string.Format("Current server = {0} ({1})", currentServer.MachineName, currentServer.Id));
+                logger.Debug($"Current server = {currentServer.MachineName} ({currentServer.Id})");
+
                 Singleton.Instance.CurrentServer = currentServer;
                 Singleton.Instance.DestinationMountpoints = repo.Many<SyncMountpoint>(f => f.DestinationServer == currentServer.Id).ToList();
                 Singleton.Instance.SourceMountpoints = repo.Many<MonitoredMountpoint>(f => f.Server == currentServer.Id).ToList();
@@ -82,7 +85,9 @@ namespace ThreeOneThree.Proxima.Agent
                 host.Run();
                 return;
             }
+
             ConsoleString usageHints = new ConsoleString();
+
             try
             {
                 
@@ -114,7 +119,9 @@ namespace ThreeOneThree.Proxima.Agent
                 Console.WriteLine(usageHints);
             }
 
-
+            Console.WriteLine();
+            Console.WriteLine("Press any key to exit");
+            Console.ReadKey();
         }
     }
 }

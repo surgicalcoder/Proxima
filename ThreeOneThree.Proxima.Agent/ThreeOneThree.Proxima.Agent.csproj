@@ -31,6 +31,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="AlphaFS, Version=2.1.0.0, Culture=neutral, PublicKeyToken=4d31a58f7d7ad5c9, processorArchitecture=MSIL">
       <HintPath>..\packages\AlphaFS.2.1.2\lib\net45\AlphaFS.dll</HintPath>
@@ -90,7 +93,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConsoleCommands\AdminCommands.cs" />
+    <Compile Include="ConsoleCommands\Source.cs" />
+    <Compile Include="ConsoleCommands\Dest.cs" />
+    <Compile Include="ConsoleCommands\USNQuery.cs" />
     <Compile Include="DateTimeUtils.cs" />
     <Compile Include="DriveConstruct.cs" />
     <Compile Include="JournalPathEqualityComparer.cs" />
@@ -107,6 +112,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="app.manifest" />
     <None Include="job_scheduling_data_2_0.xsd">
       <SubType>Designer</SubType>
     </None>
