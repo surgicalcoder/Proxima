@@ -153,7 +153,7 @@ namespace ThreeOneThree.Proxima.Agent
                 syncLog.ActionStartDate = DateTime.Now;
                 syncLog.ActionFinishDate = null;
                 Singleton.Instance.Repository.Update(syncLog);
-
+                
                 bool successfull = false;
 
                 if (syncLog.Action.GetType() == typeof (DeleteAction))
@@ -203,13 +203,15 @@ namespace ThreeOneThree.Proxima.Agent
 
                     if (syncLog.Action.IsDirectory)
                     {
-                        new DirectoryInfo(pathFrom).MoveTo(tempPath);
-                        new DirectoryInfo(tempPath).MoveTo(pathTo);
+                        new DirectoryInfo(pathFrom).MoveTo(tempPath, MoveOptions.None);
+                        new DirectoryInfo(tempPath).MoveTo(pathTo, MoveOptions.None);
                     }
                     else
                     {
-                        new FileInfo(pathFrom).MoveTo(tempPath);
-                        new FileInfo(tempPath).MoveTo(pathTo);
+                        Alphaleonis.Win32.Filesystem.File.Move(pathFrom, tempPath, MoveOptions.None);
+                        Alphaleonis.Win32.Filesystem.File.Move(tempPath, pathTo, MoveOptions.None);
+                        //new FileInfo(pathFrom).MoveTo(tempPath, MoveOptions.WriteThrough);
+                        //new FileInfo(tempPath).MoveTo(pathTo, MoveOptions.WriteThrough);
                     }
                     
                     successfull = true;
@@ -293,7 +295,7 @@ namespace ThreeOneThree.Proxima.Agent
             {
                 source.Copy(tempPath);
                 FileInfo tempInfo = new FileInfo(tempPath);
-                tempInfo.MoveTo(destination.FullPath, MoveOptions.None);
+                tempInfo.MoveTo(destination.FullPath, MoveOptions.ReplaceExisting);
             }
 
             return true;

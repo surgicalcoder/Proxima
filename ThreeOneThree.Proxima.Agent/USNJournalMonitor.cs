@@ -70,14 +70,13 @@ namespace ThreeOneThree.Proxima.Agent
                         if (usnEntries.Any())
                         {
                             logger.Debug("USN returned with " + usnEntries.Count + " entries");
+                            logger.Trace($"fsutil usn readjournal {construct.Volume} startusn={sourceMount.CurrentUSNLocation}");
                         }
 
                         List<USNChangeRange> changeRange = new List<USNChangeRange>();
 
                         foreach (var frn in usnEntries.Select(e=>e.FileReferenceNumber).Distinct())
                         {
-                                
-
                             var entriesForFile = usnEntries.Where(f => f.FileReferenceNumber == frn).ToList();
 
                             if (entriesForFile.All(e => e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.DataManagement || e.SourceInfo == Win32Api.UsnEntry.USNJournalSourceInfo.ReplicationManagement))
@@ -97,7 +96,6 @@ namespace ThreeOneThree.Proxima.Agent
                                 continue;
                             }
 
-
                             USNChangeRange range = new USNChangeRange
                             {
                                 FRN = frn,
@@ -108,16 +106,20 @@ namespace ThreeOneThree.Proxima.Agent
                                 Entry = entriesForFile.OrderBy(f => f.TimeStamp).LastOrDefault()
                             };
 
+                            bool alreadyCopiedItem = entriesForFile.GroupBy(r => r.ParentFileReferenceNumber).Select(r => r.First()).Distinct().Any(pfrn => GetActualPath(journal, pfrn).Contains("\\.proximaTemp\\"));
+
+                            if (alreadyCopiedItem || ShouldIgnore(actualPath, drivePath, range, journal))
+                            {
+                                continue;
+                            }
+
                             changeRange.Add(range);
                         }
-
-                        //logger.Trace("ChangeRange : " + changeRange.Count);
-
+                        
 
                         foreach (var item in changeRange)
                         {
-                                
-                            var actualPath = GetActualPath(journal, item.Entry as Win32Api.UsnEntry );
+                            var actualPath = GetActualPath(journal, item.Entry);
 
                             if (actualPath == "Unavailable")
                             {
@@ -143,10 +145,6 @@ namespace ThreeOneThree.Proxima.Agent
                             }
 
 
-                            if (relativePath.StartsWith(".proximaTemp"))
-                            {
-                                continue;
-                            }
                             string renameFromRelativePath = "";
                             if (item.RenameFrom != null)
                             {
@@ -213,7 +211,7 @@ namespace ThreeOneThree.Proxima.Agent
                             Singleton.Instance.Repository.Add<RawUSNEntry>(entries);
 
                             var performRollup = RollupService.PerformRollup(entries, sourceMount, Singleton.Instance.Repository);
-                            logger.Info(string.Format("Adding [{2}CHANGE/{1}USN/{0}File]", performRollup.Count, entries.Count, changeRange.Count));
+                            logger.Info(string.Format("[{3}] Adding [{2}CHANGE/{1}USN/{0}File]", performRollup.Count, entries.Count, changeRange.Count, sourceMount.Id));
                             foreach (var fileAction in performRollup)
                             {
                                 //  logger.Trace("ADD: " + fileAction.RelativePath + ", USN:" + fileAction.USN);
@@ -243,6 +241,58 @@ namespace ThreeOneThree.Proxima.Agent
             {
                 logger.Error(e, "Error in USNJournalMonitor");
             }
+        }
+
+        private bool ShouldIgnore(string actualPath, Path drivePath, USNChangeRange range, NtfsUsnJournal journal)
+        {
+            if (actualPath == "Unavailable")
+            {
+                return true;
+            }
+
+            string relativePath;
+            try
+            {
+                Uri drivePathUri = new Uri(drivePath.FullPath, UriKind.Absolute);
+                Uri actualPathUri = new Uri(actualPath, UriKind.Absolute);
+
+                relativePath = Uri.UnescapeDataString(drivePathUri.MakeRelativeUri(actualPathUri).ToString());
+            }
+            catch (Exception e)
+            {
+                relativePath = "#ERROR#";
+            }
+
+            if (relativePath == "#ERROR#" || relativePath.StartsWith("System Volume Information") || relativePath.StartsWith("$RECYCLE.BIN"))
+            {
+                return true;
+            }
+
+            string renameFromRelativePath = "";
+
+            if (range.RenameFrom != null)
+            {
+                string renameFromPath = GetActualPath(journal, range.RenameFrom);
+
+                try
+                {
+                    Uri drivePathUri = new Uri(drivePath.FullPath, UriKind.Absolute);
+                    Uri actualPathUri = new Uri(renameFromPath, UriKind.Absolute);
+
+                    renameFromRelativePath = Uri.UnescapeDataString(drivePathUri.MakeRelativeUri(actualPathUri).ToString());
+                }
+                catch (Exception e)
+                {
+                    renameFromRelativePath = "";
+                }
+            }
+
+            if (!String.IsNullOrWhiteSpace(renameFromRelativePath) && renameFromRelativePath.StartsWith(".proximaTemp"))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private static string GetActualPath(NtfsUsnJournal journal, Win32Api.UsnEntry item)
