@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Fluent.IO;
 using NLog;
 using PowerArgs;
 using Quartz;
@@ -31,7 +32,7 @@ namespace ThreeOneThree.Proxima.Agent
 
                 if (currentServer == null)
                 {
-                    currentServer = new Server {MachineName = Environment.MachineName, FailedCopyLimit = 32, MaxThreads = 1, MonitorCheckInSecs = 2, NormalCopyLimit = 256, SyncCheckInSecs = 2, Version = Assembly.GetExecutingAssembly().GetName().Version.ToString() };
+                    currentServer = new Server {MachineName = Environment.MachineName.ToLowerInvariant(), FailedCopyLimit = 32, MaxThreads = 1, MonitorCheckInSecs = 2, NormalCopyLimit = 256, SyncCheckInSecs = 2, Version = Assembly.GetExecutingAssembly().GetName().Version.ToString() };
                     logger.Trace("Creating new server");
                     repo.Add(currentServer);
                     Singleton.Instance.Servers.Add(currentServer);
@@ -47,6 +48,16 @@ namespace ThreeOneThree.Proxima.Agent
                 Singleton.Instance.CurrentServer = currentServer;
                 Singleton.Instance.DestinationMountpoints = repo.Many<SyncMountpoint>(f => f.DestinationServer == currentServer.Id).ToList();
                 Singleton.Instance.SourceMountpoints = repo.Many<MonitoredMountpoint>(f => f.Server == currentServer.Id).ToList();
+
+                if (Singleton.Instance.DestinationMountpoints.Any())
+                {
+                    foreach (var instanceDestinationMountpoint in Singleton.Instance.DestinationMountpoints)
+                    {
+                        Path.Get(instanceDestinationMountpoint.Path, ".proximaTemp.", "toCopy").CreateDirectory();
+                        Path.Get(instanceDestinationMountpoint.Path, ".proximaTemp.", "toRename").CreateDirectory();
+                        Path.Get(instanceDestinationMountpoint.Path, ".proximaTemp.", "toDelete").CreateDirectory();
+                    }
+                }
 
             }
 

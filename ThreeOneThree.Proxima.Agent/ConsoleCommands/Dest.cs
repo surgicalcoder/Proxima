@@ -17,8 +17,7 @@ namespace ThreeOneThree.Proxima.Agent.ConsoleCommands
                 DestinationServer = Singleton.Instance.CurrentServer,
                 Path = Path,
                 Mountpoint = MountId,
-                LastUSN = 0,
-                TempPath = "proximaTemp"
+                LastUSN = 0
             };
             using (Repository repo = new Repository())
             {

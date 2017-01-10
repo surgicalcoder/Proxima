@@ -143,7 +143,7 @@ namespace ThreeOneThree.Proxima.Agent
                             }
 
 
-                            if (relativePath.StartsWith(Singleton.Instance.CurrentServer.LocalTempPath))
+                            if (relativePath.StartsWith(".proximaTemp"))
                             {
                                 continue;
                             }
@@ -165,7 +165,7 @@ namespace ThreeOneThree.Proxima.Agent
                                 }
                             }
 
-                            if (!String.IsNullOrWhiteSpace(renameFromRelativePath) && renameFromRelativePath.StartsWith(Singleton.Instance.CurrentServer.LocalTempPath))
+                            if (!String.IsNullOrWhiteSpace(renameFromRelativePath) && renameFromRelativePath.StartsWith(".proximaTemp"))
                             {
                                 continue;
                             }

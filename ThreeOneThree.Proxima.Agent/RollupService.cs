@@ -74,19 +74,6 @@ namespace ThreeOneThree.Proxima.Agent
 
         public static List<FileAction> PerformRollup(List<RawUSNEntry> rawEntries, MonitoredMountpoint syncFrom, Repository repository)
         {
-
-
-            //foreach (var relPath in rawEntries.Select(f => f.RelativePath).Distinct())
-            //{
-            //    MinMax max = new MinMax
-            //    {
-            //        RelativePath = relPath,
-            //        Earliest = rawEntries.Where(e => e.RelativePath == relPath).Min(f => f.TimeStamp),
-            //        Latest = rawEntries.Where(e => e.RelativePath == relPath).Max(f => f.TimeStamp)
-            //    };
-            //    //logger.Info(max.ToString());
-            //}
-
             //logger.Info("{0} rawEntries", rawEntries.Count);
             var entries = rawEntries.Where(f => f.Close.HasValue && f.Close.Value && (!f.RenameOldName.HasValue || !f.RenameOldName.Value));
             //logger.Info("{0} entries", entries.Count());
@@ -107,18 +94,7 @@ namespace ThreeOneThree.Proxima.Agent
                     {
                         var item = new RenameAction();
                         item.IsDirectory = entry.Directory.HasValue && entry.Directory.Value;
-
-                        if (!rawEntries.Any(f => f.RenameOldName.HasValue && f.FRN == entry.FRN) && repository != null)
-                        {
-                            var oldEntry = repository.Many<RawUSNEntry>(f => f.FRN == entry.FRN && (f.RenameOldName.HasValue || f.USN < entry.USN) ).OrderByDescending(f=>f.USN);
-
-                            item.RenameFrom = oldEntry.FirstOrDefault().RelativePath;
-                        }
-                        else
-                        {
-                            item.RenameFrom = rawEntries.FirstOrDefault(f => f.RenameOldName.HasValue && f.FRN == entry.FRN).RelativePath;
-                        }
-
+                        item.RenameFrom = entry.RenameFromRelativePath;
                         if (string.IsNullOrWhiteSpace(item.RenameFrom))
                         {
                             logger.Warn("Unable to find RenameFrom for USN item " + item.USN );

@@ -164,7 +164,7 @@ namespace ThreeOneThree.Proxima.Agent
                     
                     if (path.Exists)
                     {
-                        var destinationPath = Path.Get(Singleton.Instance.CurrentServer.LocalTempPath, "toDelete", syncLog.Id).FullPath;
+                        var destinationPath = Path.Get(syncFrom.Path, ".proximaTemp." , "toDelete", syncLog.Id).FullPath;
 
                         if (syncLog.Action.IsDirectory)
                         {
@@ -198,7 +198,7 @@ namespace ThreeOneThree.Proxima.Agent
                     }
 
                     string pathFrom = Path.Get(syncFrom.Path, renameAction.RenameFrom).FullPath;
-                    string tempPath = Path.Get(Singleton.Instance.CurrentServer.LocalTempPath, "toRename", syncLog.Id).FullPath;
+                    string tempPath = Path.Get(syncFrom.Path, ".proximaTemp.", "toRename", syncLog.Id).FullPath;
                     string pathTo = Path.Get(syncFrom.Path, renameAction.RelativePath).FullPath;
 
                     if (syncLog.Action.IsDirectory)
@@ -278,7 +278,7 @@ namespace ThreeOneThree.Proxima.Agent
             }
 
             var destination = Path.Get(syncFrom.Path, relativePath);
-            string tempPath = Path.Get(Singleton.Instance.CurrentServer.LocalTempPath, "toCopy", syncLog.Id).FullPath;
+            string tempPath = Path.Get(syncFrom.Path, ".proximaTemp.", "toCopy", syncLog.Id).FullPath;
             var source = Path.Get(publicPath, relativePath);
 
             if (source.IsDirectory)
