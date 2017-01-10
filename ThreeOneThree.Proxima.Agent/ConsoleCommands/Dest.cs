@@ -10,7 +10,7 @@ namespace ThreeOneThree.Proxima.Agent.ConsoleCommands
     {
 
         [ArgActionMethod]
-        public void Create(string Path, string MountId)
+        public void Create([ArgRequired]string Path, [ArgRequired]string MountId)
         {
             SyncMountpoint mount = new SyncMountpoint()
             {
