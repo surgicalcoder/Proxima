@@ -43,7 +43,7 @@ namespace ThreeOneThree.Proxima.Agent
                     repo.Update(currentServer);
                 }
 
-                logger.Debug($"Current server = {currentServer.MachineName} ({currentServer.Id})");
+                logger.Trace($"Current server = {currentServer.MachineName} ({currentServer.Id})");
 
                 Singleton.Instance.CurrentServer = currentServer;
                 Singleton.Instance.DestinationMountpoints = repo.Many<SyncMountpoint>(f => f.DestinationServer == currentServer.Id).ToList();
@@ -61,8 +61,8 @@ namespace ThreeOneThree.Proxima.Agent
 
             }
 
-            Singleton.Instance.SourceMountpoints.ForEach(f=>logger.Debug("Source: " + f.ToString()));
-            Singleton.Instance.DestinationMountpoints.ForEach(f=>logger.Debug("Destination: " + f.Path + " // " + f.Mountpoint));
+            Singleton.Instance.SourceMountpoints.ForEach(f=>logger.Trace("Source: " + f.ToString()));
+            Singleton.Instance.DestinationMountpoints.ForEach(f=>logger.Trace("Destination: " + f.Path + " // " + f.Mountpoint));
 
 
             if (args.Length == 0 || TopshelfParameters.Contains(args[0].ToLowerInvariant()))
@@ -130,9 +130,9 @@ namespace ThreeOneThree.Proxima.Agent
                 Console.WriteLine(usageHints);
             }
 
-            Console.WriteLine();
-            Console.WriteLine("Press any key to exit");
-            Console.ReadKey();
+            //Console.WriteLine();
+            //Console.WriteLine("Press any key to exit");
+            //Console.ReadKey();
         }
     }
 }
