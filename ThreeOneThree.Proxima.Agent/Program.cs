@@ -16,7 +16,7 @@ namespace ThreeOneThree.Proxima.Agent
 {
     class Program
     {
-        static private List<string> TopshelfParameters = new List<string> { "install" ,"start","stop","uninstall"};
+        private static List<string> TopshelfParameters = new List<string> { "install" ,"start","stop","uninstall", "-displayname" };
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         static void Main(string[] args)
@@ -24,7 +24,7 @@ namespace ThreeOneThree.Proxima.Agent
             using(Repository repo = new Repository())
             {
                 Singleton.Instance.Servers = repo.All<Server>().ToList();
-                logger.Trace(string.Format("{0} number of total servers", Singleton.Instance.Servers.Count));
+                logger.Trace($"{Singleton.Instance.Servers.Count} number of total servers");
                 var currentServer = Singleton.Instance.Servers.FirstOrDefault(f => f.MachineName == Environment.MachineName.ToLowerInvariant());
 
                 if (currentServer == null)
@@ -40,7 +40,7 @@ namespace ThreeOneThree.Proxima.Agent
                     repo.Update(currentServer);
                 }
 
-                logger.Debug(string.Format("Current server = {0} ({1})", currentServer.MachineName, currentServer.Id));
+                logger.Debug($"Current server = {currentServer.MachineName} ({currentServer.Id})");
                 Singleton.Instance.CurrentServer = currentServer;
                 Singleton.Instance.DestinationMountpoints = repo.Many<SyncMountpoint>(f => f.DestinationServer == currentServer.Id).ToList();
                 Singleton.Instance.SourceMountpoints = repo.Many<MonitoredMountpoint>(f => f.Server == currentServer.Id).ToList();
@@ -51,7 +51,7 @@ namespace ThreeOneThree.Proxima.Agent
             Singleton.Instance.DestinationMountpoints.ForEach(f=>logger.Debug("Destination: " + f.Path + " // " + f.Mountpoint));
 
 
-            if (args.Length == 0 || TopshelfParameters.Contains(args[0].ToLowerInvariant()))
+            if (args.Length == 0 || (args.Any(f=>f.Contains(" -displayname")) && args.Any(f=>f.Contains(" -servicename") )) || TopshelfParameters.Contains(args[0].ToLowerInvariant()))
             {
                 Host host = HostFactory.New(x =>
                 {
@@ -82,30 +82,28 @@ namespace ThreeOneThree.Proxima.Agent
                 host.Run();
                 return;
             }
+            logger.Trace("Args: " +string.Join(" ", args));
             ConsoleString usageHints = new ConsoleString();
             try
             {
-                
-                if (args[0].ToLowerInvariant() == "source")
+                switch (args[0].ToLowerInvariant())
                 {
-                    Args.InvokeAction<ConsoleCommands.Source>(args.Skip(1).ToArray());
+                    case "source":
+                        Args.InvokeAction<ConsoleCommands.Source>(args.Skip(1).ToArray());
                     
-                    usageHints = ArgUsage.GenerateUsageFromTemplate<ConsoleCommands.Source>();
-                }
-                else if (args[0].ToLowerInvariant() == "dest")
-                {
-                    Args.InvokeAction<ConsoleCommands.Dest>(args.Skip(1).ToArray());
-                    usageHints = ArgUsage.GenerateUsageFromTemplate<ConsoleCommands.Dest>();
-                }
-                else if (args[0].ToLowerInvariant() == "query")
-                {
-                    Args.InvokeAction<ConsoleCommands.USNQuery>(args.Skip(1).ToArray());
-                    usageHints = ArgUsage.GenerateUsageFromTemplate<ConsoleCommands.USNQuery>();
-                }
-                else
-                {
-                    Console.WriteLine("Missing type of config - source, dest or query");
-                    return;
+                        usageHints = ArgUsage.GenerateUsageFromTemplate<ConsoleCommands.Source>();
+                        break;
+                    case "dest":
+                        Args.InvokeAction<ConsoleCommands.Dest>(args.Skip(1).ToArray());
+                        usageHints = ArgUsage.GenerateUsageFromTemplate<ConsoleCommands.Dest>();
+                        break;
+                    case "query":
+                        Args.InvokeAction<ConsoleCommands.USNQuery>(args.Skip(1).ToArray());
+                        usageHints = ArgUsage.GenerateUsageFromTemplate<ConsoleCommands.USNQuery>();
+                        break;
+                    default:
+                        Console.WriteLine("Missing type of config - source, dest or query");
+                        return;
                 }
             }
             catch (ArgException ex)
